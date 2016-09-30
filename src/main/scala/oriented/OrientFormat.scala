@@ -23,6 +23,13 @@ trait OrientFormat[A] {
     */
   def properties(model: A): Map[String, Any]
 
+
+  // for {
+  // id <- read[Int]
+  // name <- read[String]
+  // birthday <- read[Date]
+  // yield User(id, name, birthday)
+
   // case class User(id: Int, name: String, birthday: Date)
   // name: "User"
   // nameTypes: "id" -> Int, "name" -> String, "birthday" -> Date

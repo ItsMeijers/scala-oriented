@@ -3,7 +3,6 @@ package oriented
 import com.orientechnologies.orient.client.remote.OServerAdmin
 import com.tinkerpop.blueprints.impls.orient.{OrientGraph, OrientGraphFactory, OrientGraphNoTx}
 import oriented.free.dsl._
-import freek._
 import oriented.syntax.{OrientIO, OrientProgram}
 
 /**
@@ -59,29 +58,25 @@ sealed trait OrientClient {
     */
   def pool: Option[(Int, Int)]
 
+  val C: Clients[OrientProgram] = Clients.clients[OrientProgram]
+
   /**
     * Action on the client that creates a OrientIO for creating a VertexType of A.
     */
   def createVertexType[A](implicit orientFormat: OrientFormat[A]): OrientIO[VertexType[A]] =
-    CreateVertexType[A](orientFormat)
-      .upcast[ClientDSL[VertexType[A]]]
-      .freek[OrientProgram]
+    C.createVertexType[A](orientFormat)
 
   /**
     * Action on the client that creates a OrientIO for creating an EdgeType of A.
     */
   def createEdgeType[A](implicit orientFormat: OrientFormat[A]): OrientIO[EdgeType[A]] =
-    CreateEdgeType[A](orientFormat)
-      .upcast[ClientDSL[EdgeType[A]]]
-      .freek[OrientProgram]
+    C.createEdgeType[A](orientFormat)
 
   /**
     * Action on the client that creates an OrientIO which creates a Vertex in the database.
     */
   def addVertex[A](vertexModel: A)(implicit orientFormat: OrientFormat[A]): OrientIO[Vertex[A]] =
-    AddVertex[A](vertexModel, orientFormat)
-      .upcast[ClientDSL[Vertex[A]]]
-      .freek[OrientProgram]
+    C.addVertex[A](vertexModel, orientFormat)
 
   /**
     * Action on the client that creates an OrientIO which creates an Edge link between to vertices in the database.
@@ -90,9 +85,7 @@ sealed trait OrientClient {
                        inVertex: Vertex[B],
                        outVertex: Vertex[C])
                       (implicit orientFormat: OrientFormat[A]): OrientIO[Edge[A]] =
-    AddEdge[A, B, C](edgeModel, inVertex, outVertex, orientFormat)
-      .upcast[ClientDSL[Edge[A]]]
-      .freek[OrientProgram]
+    C.addEdge[A, B, C](edgeModel, inVertex, outVertex, orientFormat)
 }
 
 /**

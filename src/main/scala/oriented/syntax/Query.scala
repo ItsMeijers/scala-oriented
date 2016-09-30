@@ -1,10 +1,8 @@
 package oriented.syntax
 
-import cats.Id
 import cats.data.NonEmptyList
 import oriented._
 import oriented.free.dsl._
-import freek._
 
 /**
   * Constructs Queries resulting in either a Vertex or Edge.
@@ -12,6 +10,8 @@ import freek._
 sealed trait Query[A] {
 
   type E <: Element[A]
+
+  def S: Sqls[OrientProgram]
 
   /**
     * The extended SQL string that forms the query.
@@ -48,57 +48,45 @@ sealed trait Query[A] {
 /**
   * Query Resulting in a Vertex.
   */
-class VertexQuery[A](val query: String, val orientFormat: OrientFormat[A]) extends Query[A] {
+class VertexQuery[A](val query: String, val orientFormat: OrientFormat[A])(implicit val S: Sqls[OrientProgram]) extends Query[A] {
+
+  import S._
 
   type E = Vertex[A]
 
   def list: OrientIO[List[E]] =
-    VertexList[A](query, orientFormat.format)
-      .upcast[SqlDSL[List[E]]]
-      .freek[OrientProgram]
+    vertexList[A](query, orientFormat.format)
 
   def nel: OrientIO[NonEmptyList[E]] =
-    VertexNel[A](query, orientFormat.format)
-      .upcast[SqlDSL[NonEmptyList[E]]]
-      .freek[OrientProgram]
+    vertexNel[A](query, orientFormat.format)
 
   def option: OrientIO[Option[E]] =
-    OptionalVertex[A](query, orientFormat.format)
-      .upcast[SqlDSL[Option[E]]]
-      .freek[OrientProgram]
+    optionalVertex[A](query, orientFormat.format)
 
   def unique: OrientIO[E] =
-    UniqueVertex[A](query, orientFormat.format)
-      .upcast[SqlDSL[Id[E]]]
-      .freek[OrientProgram]
+    uniqueVertex[A](query, orientFormat.format)
 
 }
 
 /**
   * Query resulting in an Edge.
   */
-class EdgeQuery[A](val query: String, val orientFormat: OrientFormat[A]) extends Query[A] {
+class EdgeQuery[A](val query: String, val orientFormat: OrientFormat[A])(implicit val S: Sqls[OrientProgram]) extends Query[A] {
+
+  import S._
 
   type E = Edge[A]
 
   def list: OrientIO[List[E]] =
-    EdgeList[A](query, orientFormat.format)
-      .upcast[SqlDSL[List[E]]]
-      .freek[OrientProgram]
+    edgeList[A](query, orientFormat.format)
 
   def nel: OrientIO[NonEmptyList[E]] =
-    EdgeNel[A](query, orientFormat.format)
-      .upcast[SqlDSL[NonEmptyList[E]]]
-      .freek[OrientProgram]
+    edgeNel[A](query, orientFormat.format)
 
   def option: OrientIO[Option[E]] =
-    OptionalEdge[A](query, orientFormat.format)
-      .upcast[SqlDSL[Option[E]]]
-      .freek[OrientProgram]
+    optionalEdge[A](query, orientFormat.format)
 
   def unique: OrientIO[E] =
-    UniqueEdge[A](query, orientFormat.format)
-      .upcast[SqlDSL[Id[E]]]
-      .freek[OrientProgram]
+    uniqueEdge[A](query, orientFormat.format)
 
 }

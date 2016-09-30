@@ -1,5 +1,6 @@
 package oriented.free.dsl
 
+import cats.free.{Free, Inject}
 import oriented.{Edge, OrientFormat, Vertex}
 
 /**
@@ -21,3 +22,17 @@ case class GetOutVertex[A, B](edge: Edge[A], orientFormat: OrientFormat[B]) exte
 
 // TODO
 case class SaveEdge()
+
+class Edges[F[_]](implicit inject: Inject[EdgeDSL, F]) {
+
+  def getInVertex[A, B](edge: Edge[A], orientFormat: OrientFormat[B]): Free[F, Vertex[B]] =
+    Free.inject[EdgeDSL, F](GetInVertex[A, B](edge, orientFormat))
+
+  def getOutVertex[A, B](edge: Edge[A], orientFormat: OrientFormat[B]): Free[F, Vertex[B]] =
+    Free.inject[EdgeDSL, F](GetInVertex[A, B](edge, orientFormat))
+
+}
+
+object Edges {
+  def edges[F[_]](implicit inject: Inject[EdgeDSL, F]): Edges[F] = new Edges[F]
+}

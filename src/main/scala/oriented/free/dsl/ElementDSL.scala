@@ -1,5 +1,6 @@
 package oriented.free.dsl
 
+import cats.free.{Free, Inject}
 import com.orientechnologies.orient.core.id.ORID
 import oriented.Element
 
@@ -35,3 +36,26 @@ case class GetLabel[A](element: Element[A]) extends ElementDSL[String]
   * Constructor for the action of removing an element. Result of the action is Unit.
   */
 case class RemoveElement[A](element: Element[A]) extends ElementDSL[Unit]
+
+class Elements[F[_]](implicit inject: Inject[ElementDSL, F]) {
+
+  def getBaseClassName[A](element: Element[A]): Free[F, String] =
+    Free.inject[ElementDSL, F](GetBaseClassName(element))
+
+  def getElementType[A](element: Element[A]): Free[F, String] =
+    Free.inject[ElementDSL, F](GetElementType[A](element))
+
+  def getIdentity[A](element: Element[A]): Free[F, ORID] =
+    Free.inject[ElementDSL, F](GetIdentity[A](element))
+
+  def getLabel[A](element: Element[A]): Free[F, String] =
+    Free.inject[ElementDSL, F](GetLabel[A](element))
+
+  def removeElement[A](element: Element[A]): Free[F, Unit] =
+    Free.inject[ElementDSL, F](RemoveElement[A](element))
+
+}
+
+object Elements {
+  def elements[F[_]](implicit inject: Inject[ElementDSL, F]): Elements[F] = new Elements[F]
+}

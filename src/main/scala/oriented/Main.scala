@@ -1,8 +1,18 @@
 package oriented
 
 import java.util.Date
+import java.util.concurrent.TimeUnit
+
+import cats.Id
+import cats.data.{EitherT, NonEmptyList}
+import cats.free.Free
+import com.orientechnologies.orient.core.id.ORID
 import com.tinkerpop.blueprints.impls.orient.OrientElement
 import oriented.syntax._
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 object Main extends App {
 
@@ -101,7 +111,7 @@ object Main extends App {
 //  } yield edges
 
   val unsafeResult: (Vertex[User], Edge[Likes], Vertex[Article]) =
-    runUnsafe(userLikesArticle, enableTransactions = false)
+    userLikesArticle.runUnsafe(false)
 //
 //  val safeResult = toOrientActionInterpreter(orientAction).runSafe
 //
@@ -119,10 +129,21 @@ object Main extends App {
 
   println(unsafeResult) // success
 
+  import cats.instances.list.catsStdInstancesForList
+  import cats.syntax.traverse._
 
-  val unsafeResultTwo = runUnsafe(sql"SELECT * FROM User".vertex[User].nel)
+//  val program: OrientIO[ORID] = for {
+//    users <- sql"SELECT * FROM User".vertex[User].unique
+//    id <- users.getIdentity
+//  } yield id
+//
+//  val result: EitherT[Future, Throwable, ORID] = program.runAsync
+//
+//  val resultNow: Either[Throwable, ORID] = Await.result(result.value, Duration(10, TimeUnit.SECONDS))
+//
+//  println(resultNow)
 
-  println(unsafeResultTwo)
+//  println(unsafeResultTwo)
 //
 //  println(safeResult)
 //

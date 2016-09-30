@@ -1,6 +1,6 @@
 package oriented
 
-import cats.data.EitherT
+import cats.data.{Coproduct, EitherT}
 import cats.free.Free
 import com.tinkerpop.blueprints.impls.orient.OrientBaseGraph
 import oriented.free.dsl._
@@ -9,166 +9,181 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 import cats.instances.try_.catsStdInstancesForTry
 import cats.instances.future.catsStdInstancesForFuture
-import freek._
+import cats.{Id, ~>}
 
 /**
   * Syntax package for importing types and implicits in scope.
   */
 package object syntax {
 
+
   /**
     * Type of an OrientProgram where each DSL is combined into one program.
     */
-  type OrientProgram = SqlDSL :|: ClientDSL :|: ElementDSL :|: VertexDSL :|: EdgeDSL :|: NilDSL
+  type OrientProgram[A] =
+    Coproduct[EdgeDSL, Coproduct[VertexDSL, Coproduct[ElementDSL, Coproduct[ClientDSL, SqlDSL, ?], ?], ?], A]
 
   /**
-    * Creates the OrientProgram DSL
+    * An OrientIO is a Free from the OrientProgram co product resulting in a type A.
     */
-  val OP = DSL.Make[OrientProgram]
+  type OrientIO[A] = Free[OrientProgram, A]
 
-  /**
-    * An OrientIO is a Free from the OrientProgram co product resulting in a type R.
-    */
-  type OrientIO[R] = Free[OP.Cop, R]
+  implicit class OrientIOInterpreter[A](orientIO: OrientIO[A]) {
 
-  /**
-    * Overloaded function of runUnsafe.
-    */
-  def runUnsafe[A](orientIO: OrientIO[A])(implicit orientClient: OrientClient): A =
-    runUnsafe(orientIO, enableTransactions = true)
+    /**
+      * Overloaded function of runUnsafe.
+      */
+    def runUnsafe(orientIO: OrientIO[A])(implicit orientClient: OrientClient): A =
+      runUnsafe(enableTransactions = true)
 
-  /**
-    * Runs the OrientIO unsafely.
-    * Can throw errors and does not control side effects!
-    */
-  def runUnsafe[A](orientIO: OrientIO[A], enableTransactions: Boolean)(implicit orientClient: OrientClient): A = {
-    implicit val graph: OrientBaseGraph =
-      if(enableTransactions) orientClient.graph
+    /**
+      * Runs the OrientIO unsafely.
+      * Can throw errors and does not control side effects!
+      */
+    def runUnsafe(enableTransactions: Boolean)(implicit orientClient: OrientClient): A = {
+      implicit val graph: OrientBaseGraph =
+        if(enableTransactions) orientClient.graph
+        else orientClient.graphNoTransaction
+
+      val unsafeInterpreter: OrientProgram ~> Id =
+        UnsafeEdgeInterpreter     or
+       (UnsafeVertexInterpreter   or
+       (UnsafeElementInterpreter  or
+       (UnsafeClientInterpreter() or
+        UnsafeSqlInterpreter())))
+
+      val result = orientIO.foldMap(unsafeInterpreter)
+
+      graph.shutdown()
+
+      result
+    }
+
+    /**
+      * Overloaded function of tryRun.
+      */
+    def tryRun(implicit orientClient: OrientClient): Try[A] = tryRun(enableTransactions = true)
+
+    /**
+      * Runs the orientIO safely resulting in a Try[A].
+      */
+    def tryRun(enableTransactions: Boolean)(implicit orientClient: OrientClient): Try[A] = {
+      implicit val graph: OrientBaseGraph = if(enableTransactions) orientClient.graph
       else orientClient.graphNoTransaction
 
-    val result = orientIO.interpret(
-      UnsafeSqlInterpreter()    :&:
-      UnsafeClientInterpreter() :&:
-      UnsafeElementInterpreter  :&:
-      UnsafeVertexInterpreter   :&:
-      UnsafeEdgeInterpreter)
+      val tryInterpreter: OrientProgram ~> Try =
+        TryEdgeInterpreter     or
+       (TryVertexInterpreter   or
+       (TryElementInterpreter  or
+       (TryClientInterpreter() or
+        TrySqlInterpreter())))
 
-    graph.shutdown()
+      val result = orientIO.foldMap(tryInterpreter)
 
-    result
-  }
+      if(result.isFailure && enableTransactions) graph.rollback()
 
+      graph.shutdown()
 
-  /**
-    * Overloaded function of runSafe.
-    */
-  def runSafe[A](orientIO: OrientIO[A])(implicit orientClient: OrientClient): Either[Throwable, A] = runSafe(orientIO, enableTransactions = true)
+      result
+    }
 
-  /**
-    * Runs the orientIO safely resulting in either a Throwable or A, where A is the result of Free.
-    */
-  def runSafe[A](orientIO: OrientIO[A], enableTransactions: Boolean)(implicit orientClient: OrientClient): Either[Throwable, A] =
-  tryRun(orientIO, enableTransactions) match {
-    case Failure(exception) => Left(exception)
-    case Success(a)         => Right(a)
-  }
+    /**
+      * Overloaded function of runSafe.
+      */
+    def run(implicit orientClient: OrientClient): Either[Throwable, A] =
+      run(enableTransactions = true)
 
-  /**
-    * Overloaded function of tryRun.
-    */
-  def tryRun[A](orientIO: OrientIO[A])(implicit orientClient: OrientClient): Try[A] = tryRun(orientIO, enableTransactions = true)
+    /**
+      * Runs the orientIO safely resulting in either a Throwable or A, where A is the result of Free.
+      */
+    def run(enableTransactions: Boolean)(implicit orientClient: OrientClient): Either[Throwable, A] =
+      tryRun(enableTransactions) match {
+        case Failure(exception) => Left(exception)
+        case Success(a)         => Right(a)
+      }
 
-  /**
-    * Runs the orientIO safely resulting in a Try[A].
-    */
-  def tryRun[A](orientIO: OrientIO[A], enableTransactions: Boolean)(implicit orientClient: OrientClient): Try[A] = {
-    implicit val graph: OrientBaseGraph = if(enableTransactions) orientClient.graph
-    else orientClient.graphNoTransaction
+    /**
+      * Overloaded function of runAsyncUnsafe
+      */
+    def runAsyncUnsafe(implicit executionContext: ExecutionContext, orientClient: OrientClient): Future[A] =
+      runAsyncUnsafe(enableTransactions = true)
 
-    val result = orientIO.interpret(
-      TrySqlInterpreter()    :&:
-        TryClientInterpreter() :&:
-        TryElementInterpreter  :&:
-        TryVertexInterpreter  :&:
-        TryEdgeInterpreter)
+    /**
+      * Runs the orientIO resulting in Futures, note that this is expirimental since the OrientElements are not thread
+      * save.
+      */
+    def runAsyncUnsafe(enableTransactions: Boolean)
+                      (implicit executionContext: ExecutionContext,
+                       orientClient: OrientClient): Future[A] = {
+      implicit val graph: OrientBaseGraph = if(enableTransactions) orientClient.graph
+        else orientClient.graphNoTransaction
 
-    if(result.isFailure && enableTransactions) graph.rollback()
+      val asyncInterpreter: OrientProgram ~> Future =
+        AsyncEdgeInterpreter()    or
+       (AsyncVertexInterpreter()  or
+       (AsyncElementInterpreter() or
+       (AsyncClientInterpreter()  or
+        AsyncSqlInterpreter())))
 
-    graph.shutdown()
+      val result = orientIO.foldMap(asyncInterpreter)
 
-    result
-  }
+      result.onFailure(PartialFunction { _ =>
+        if(enableTransactions) graph.rollback()
+        graph.shutdown()
+      })
 
-  /**
-    * TODO
-    */
-  def runAsyncUnsafe[A](orientIO: OrientIO[A])(implicit executionContext: ExecutionContext, orientClient: OrientClient): Future[A] =
-    runAsyncUnsafe(orientIO, enableTransactions = true)
+      result.onSuccess(PartialFunction { _ =>
+        graph.shutdown()
+      })
 
-  /**
-    * TODO
-    */
-  def runAsyncUnsafe[A](orientIO: OrientIO[A], enableTransactions: Boolean)(implicit executionContext: ExecutionContext, orientClient: OrientClient): Future[A] = {
-    implicit val graph: OrientBaseGraph = if(enableTransactions) orientClient.graph
+      result
+    }
+
+    /**
+      * Overloaded function of runAsyncSafe
+      */
+    def runAsync(implicit executionContext: ExecutionContext,
+                 orientClient: OrientClient): EitherT[Future, Throwable, A] =
+      runAsync(enableTransactions = true)
+
+    /**
+      * Runs the orientIO resulting in a Either Transformer of Future Either[Throwable, A]
+      */
+    def runAsync(enableTransactions: Boolean)
+                (implicit executionContext: ExecutionContext,
+                     orientClient: OrientClient): EitherT[Future, Throwable, A] = {
+      implicit val graph: OrientBaseGraph = if(enableTransactions) orientClient.graph
       else orientClient.graphNoTransaction
 
-    val result = orientIO.interpret(
-      AsyncSqlInterpreter()     :&:
-        AsyncClientInterpreter()  :&:
-        AsyncElementInterpreter() :&:
-        AsyncVertexInterpreter()  :&:
-        AsyncEdgeInterpreter())
-
-    result.onFailure(PartialFunction { _ =>
-      if(enableTransactions) graph.rollback()
-      graph.shutdown()
-    })
-
-    result.onSuccess(PartialFunction { _ =>
-      graph.shutdown()
-    })
-
-    result
-  }
+      val interpreter: OrientProgram ~> EitherT[Future, Throwable, ?] =
+        SafeAsyncEdgeInterpreter() or
+       (SafeAsyncVertexInterpreter() or
+       (SafeAsyncElementInterpreter() or
+       (SafeAsyncClientInterpreter() or
+       SafeAsyncSqlInterpreter())))
 
 
-  /**
-    * TODO
-    */
-  def runAsyncSafe[A](orientIO: OrientIO[A])(implicit executionContext: ExecutionContext, orientClient: OrientClient): EitherT[Future, Throwable, A] =
-  runAsyncSafe(orientIO, enableTransactions = true)
+      val result = orientIO.foldMap(interpreter)
 
-  /**
-    * TODO
-    */
-  def runAsyncSafe[A](orientIO: OrientIO[A], enableTransactions: Boolean)(implicit executionContext: ExecutionContext, orientClient: OrientClient): EitherT[Future, Throwable, A] = {
-    implicit val graph: OrientBaseGraph = if(enableTransactions) orientClient.graph
-    else orientClient.graphNoTransaction
+      val isLeft = result.isLeft
 
-    val result = orientIO.interpret(
-      SafeAsyncSqlInterpreter()     :&:
-        SafeAsyncClientInterpreter()  :&:
-        SafeAsyncElementInterpreter() :&:
-        SafeAsyncVertexInterpreter()  :&:
-        SafeAsyncEdgeInterpreter())
+      isLeft.onFailure(PartialFunction { _ =>
+        if(enableTransactions) graph.rollback()
+        graph.shutdown()
+      })
 
-    val isLeft = result.isLeft
+      isLeft.onSuccess(PartialFunction { failed =>
+        if(failed && enableTransactions) graph.rollback()
+        graph.shutdown()
+      })
 
-    isLeft.onFailure(PartialFunction { _ =>
-      if(enableTransactions) graph.rollback()
-      graph.shutdown()
-    })
+      result
+    }
 
-    isLeft.onSuccess(PartialFunction { failed =>
-      if(failed && enableTransactions) graph.rollback()
-      graph.shutdown()
-    })
-
-    result
   }
 
   /**
-    * TODO
+    * Implicit conversion for sql interpolation
     */
   implicit class OrientSqlWrapper(val sql: StringContext) {
 
