@@ -1,8 +1,14 @@
 name := "scala-oriented"
 
-version := "0.1"
+organization := "com.itsmeijers"
+
+version := "0.1-SNAPSHOT"
+
+// Add compile for multiple versions
 
 scalaVersion := "2.11.8"
+
+crossScalaVersions := Seq("2.10.6", "2.11.8")
 
 scalacOptions := Seq(
     "-unchecked"
@@ -30,6 +36,7 @@ libraryDependencies ++= Seq(
   , "org.typelevel"                %% "cats"             % "0.7.2"
   , "org.spire-math"               %% "kind-projector"   % "0.7.1"
   , "com.milessabin"               %% "si2712fix-plugin" % "1.2.0" cross CrossVersion.full
+  , "com.chuusai"                  %% "shapeless"        % "2.3.2"
 )
 
 addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.7.1")
@@ -41,3 +48,6 @@ fork := true
 javaOptions in run ++= Seq(
   "-XX:MaxDirectMemorySize=16384m"
 )
+
+
+
