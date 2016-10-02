@@ -28,6 +28,8 @@ package object syntax {
     */
   type OrientIO[A] = Free[OrientProgram, A]
 
+  type OrientRead[A] = Free[ReadDSL, A]
+
   implicit class OrientIOInterpreter[A](orientIO: OrientIO[A]) {
 
     /**

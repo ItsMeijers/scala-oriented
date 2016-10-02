@@ -41,14 +41,14 @@ sealed trait SqlInterpreter[G[_]] extends (SqlDSL ~> G) {
     * Evaluates each SqlDSL A constructor to A
     */
   protected def evaluateDSL[A](fa: SqlDSL[A]): A = fa match {
-    case UniqueVertex(query, f)   => executeCommandVertex(query, f).head
-    case UniqueEdge(query, f)     => executeCommandEdge(query, f).head
-    case OptionalVertex(query, f) => executeCommandVertex(query, f).headOption
-    case OptionalEdge(query, f)   => executeCommandEdge(query, f).headOption
-    case VertexList(query, f)     => executeCommandVertex(query, f)
-    case EdgeList(query,f)        => executeCommandEdge(query, f)
-    case VertexNel(query, f)      => executeCommandVertex(query, f).toNel.get
-    case EdgeNel(query, f)        => executeCommandEdge(query, f).toNel.get
+    case UniqueVertex(query, f)   => executeCommandVertex(query, f.run).head
+    case UniqueEdge(query, f)     => executeCommandEdge(query, f.run).head
+    case OptionalVertex(query, f) => executeCommandVertex(query, f.run).headOption
+    case OptionalEdge(query, f)   => executeCommandEdge(query, f.run).headOption
+    case VertexList(query, f)     => executeCommandVertex(query, f.run)
+    case EdgeList(query,f)        => executeCommandEdge(query, f.run)
+    case VertexNel(query, f)      => executeCommandVertex(query, f.run).toNel.get
+    case EdgeNel(query, f)        => executeCommandEdge(query, f.run).toNel.get
     case UnitDSL(query)           =>
       graph.command(new OCommandSQL(query)).execute()
       ()

@@ -1,6 +1,10 @@
 package oriented
 
+import cats.data.Reader
 import com.tinkerpop.blueprints.impls.orient.OrientElement
+import oriented.free.dsl.{ReadDSL, Reads}
+import oriented.free.interpreters.ReadInterpreter
+import oriented.syntax.OrientRead
 
 /**
   * OrientFormat typeclass makes it able to transform from and to OrientElements from a specific model A.
@@ -10,7 +14,11 @@ trait OrientFormat[A] {
   /**
     * Formats an OrientElement to the model of type A
     */
-  def format(element: OrientElement): A
+  //def format(element: OrientElement): A
+
+  lazy val reader: Reader[OrientElement, A] = format.foldMapUnsafe(ReadInterpreter)
+
+  def format: OrientRead[A]
 
   /**
     * The name of the Model (class name)
@@ -22,6 +30,8 @@ trait OrientFormat[A] {
     * TODO: Change to Shapeless implementation
     */
   def properties(model: A): Map[String, Any]
+
+  val read: Reads[ReadDSL] = Reads.reads[ReadDSL]
 
 
   // for {

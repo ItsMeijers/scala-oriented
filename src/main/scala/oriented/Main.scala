@@ -22,23 +22,33 @@ object Main extends App {
 
   implicit val userFormat = new OrientFormat[User] {
 
-    def format(element: OrientElement): User = User(
-      element.getProperty[String]("name"),
-      element.getProperty[String]("occupation"))
+//    def format(element: OrientElement): User = User(
+//      element.getProperty[String]("name"),
+//      element.getProperty[String]("occupation"))
+
+    def format: OrientRead[User] =
+      for {
+        name <- read.readString("name")
+        occupation <- read.readString("occupation")
+      } yield User(name, occupation)
 
     def name: String = "User"
 
     def properties(user: User): Map[String, Any] =
       Map("name" -> user.name, "occupation" -> user.occupation)
-
   }
 
   case class Likes(date: Date)
 
   implicit val likesFormat = new OrientFormat[Likes] {
-    override def format(element: OrientElement): Likes = Likes(
-      element.getProperty[Date]("date")
-    )
+//    override def format(element: OrientElement): Likes = Likes(
+//      element.getProperty[Date]("date")
+//    )
+
+    def format: OrientRead[Likes] =
+      for {
+        date <- read.readDatetime("date")
+      } yield Likes(date)
 
     override def name: String = "Likes"
 
@@ -48,10 +58,16 @@ object Main extends App {
   case class Article(title: String, content: String)
 
   implicit val articleFormat = new OrientFormat[Article] {
-    override def format(element: OrientElement): Article = Article(
-      element.getProperty[String]("title"),
-      element.getProperty[String]("content")
-    )
+//    override def format(element: OrientElement): Article = Article(
+//      element.getProperty[String]("title"),
+//      element.getProperty[String]("content")
+//    )
+
+    def format: OrientRead[Article] =
+      for {
+        title <- read.readString("title")
+        content <- read.readString("content")
+      } yield Article(title, content)
 
     override def name: String = "Article"
 
