@@ -32,6 +32,12 @@ case class AddVertex[A](vertexModel: A, orientFormat: OrientFormat[A]) extends C
   */
 case class AddEdge[A, B, C](edgeModel: A, inVertex: Vertex[B], outVertex: Vertex[C], orientFormat: OrientFormat[A]) extends ClientDSL[Edge[A]]
 
+/**
+  * Constructor for shutting down OrientDB.
+  * @param close wether db gets closed permanently.
+  */
+case class Shutdown(close: Boolean) extends ClientDSL[Unit]
+
 class Clients[F[_]](implicit i: Inject[ClientDSL, F]) {
 
   def createVertexType[A](orientFormat: OrientFormat[A]): Free[F, VertexType[A]] =
@@ -48,6 +54,8 @@ class Clients[F[_]](implicit i: Inject[ClientDSL, F]) {
                        outVertex: Vertex[C],
                        orientFormat: OrientFormat[A]): Free[F, Edge[A]] =
     Free.inject[ClientDSL, F](AddEdge[A, B, C](edgeModel, inVertex, outVertex, orientFormat))
+
+  def shutdown(close: Boolean): Free[F, Unit] = Free.inject[ClientDSL, F](Shutdown(close))
 
 }
 

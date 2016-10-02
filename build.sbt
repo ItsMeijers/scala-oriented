@@ -4,8 +4,6 @@ organization := "com.itsmeijers"
 
 version := "0.1-SNAPSHOT"
 
-// Add compile for multiple versions
-
 scalaVersion := "2.11.8"
 
 crossScalaVersions := Seq("2.10.6", "2.11.8")
@@ -43,11 +41,3 @@ addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.7.1")
 addCompilerPlugin("com.milessabin" % "si2712fix-plugin" % "1.2.0" cross CrossVersion.full)
 
 fork := true
-
-// Increase maximum JVM memory allocation
-javaOptions in run ++= Seq(
-  "-XX:MaxDirectMemorySize=16384m"
-)
-
-
-

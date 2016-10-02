@@ -86,6 +86,9 @@ sealed trait OrientClient {
                        outVertex: Vertex[C])
                       (implicit orientFormat: OrientFormat[A]): OrientIO[Edge[A]] =
     C.addEdge[A, B, C](edgeModel, inVertex, outVertex, orientFormat)
+
+  def shutdown(close: Boolean = false): OrientIO[Unit] =
+    C.shutdown(close)
 }
 
 /**

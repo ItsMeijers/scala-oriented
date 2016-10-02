@@ -35,14 +35,14 @@ package object syntax {
     /**
       * Overloaded function of runUnsafe.
       */
-    def runUnsafe(orientIO: OrientIO[A])(implicit orientClient: OrientClient): A =
-      runUnsafe(enableTransactions = true)
+    def runGraphUnsafe(implicit orientClient: OrientClient): A =
+      runGraphUnsafe(enableTransactions = true)
 
     /**
       * Runs the OrientIO unsafely.
       * Can throw errors and does not control side effects!
       */
-    def runUnsafe(enableTransactions: Boolean)(implicit orientClient: OrientClient): A = {
+    def runGraphUnsafe(enableTransactions: Boolean)(implicit orientClient: OrientClient): A = {
       implicit val graph: OrientBaseGraph =
         if(enableTransactions) orientClient.graph
         else orientClient.graphNoTransaction
@@ -64,12 +64,12 @@ package object syntax {
     /**
       * Overloaded function of tryRun.
       */
-    def tryRun(implicit orientClient: OrientClient): Try[A] = tryRun(enableTransactions = true)
+    def tryGraphRun(implicit orientClient: OrientClient): Try[A] = tryGraphRun(enableTransactions = true)
 
     /**
       * Runs the orientIO safely resulting in a Try[A].
       */
-    def tryRun(enableTransactions: Boolean)(implicit orientClient: OrientClient): Try[A] = {
+    def tryGraphRun(enableTransactions: Boolean)(implicit orientClient: OrientClient): Try[A] = {
       implicit val graph: OrientBaseGraph = if(enableTransactions) orientClient.graph
       else orientClient.graphNoTransaction
 
@@ -92,14 +92,14 @@ package object syntax {
     /**
       * Overloaded function of runSafe.
       */
-    def run(implicit orientClient: OrientClient): Either[Throwable, A] =
-      run(enableTransactions = true)
+    def runGraph(implicit orientClient: OrientClient): Either[Throwable, A] =
+      runGraph(enableTransactions = true)
 
     /**
       * Runs the orientIO safely resulting in either a Throwable or A, where A is the result of Free.
       */
-    def run(enableTransactions: Boolean)(implicit orientClient: OrientClient): Either[Throwable, A] =
-      tryRun(enableTransactions) match {
+    def runGraph(enableTransactions: Boolean)(implicit orientClient: OrientClient): Either[Throwable, A] =
+      tryGraphRun(enableTransactions) match {
         case Failure(exception) => Left(exception)
         case Success(a)         => Right(a)
       }
@@ -107,15 +107,15 @@ package object syntax {
     /**
       * Overloaded function of runAsyncUnsafe
       */
-    def runAsyncUnsafe(implicit executionContext: ExecutionContext, orientClient: OrientClient): Future[A] =
-      runAsyncUnsafe(enableTransactions = true)
+    def runGraphAsyncUnsafe(implicit executionContext: ExecutionContext, orientClient: OrientClient): Future[A] =
+      runGraphAsyncUnsafe(enableTransactions = true)
 
     /**
       * Runs the orientIO resulting in Futures, note that this is expirimental since the OrientElements are not thread
       * save.
       */
-    def runAsyncUnsafe(enableTransactions: Boolean)
-                      (implicit executionContext: ExecutionContext,
+    def runGraphAsyncUnsafe(enableTransactions: Boolean)
+                           (implicit executionContext: ExecutionContext,
                        orientClient: OrientClient): Future[A] = {
       implicit val graph: OrientBaseGraph = if(enableTransactions) orientClient.graph
         else orientClient.graphNoTransaction
@@ -144,15 +144,15 @@ package object syntax {
     /**
       * Overloaded function of runAsyncSafe
       */
-    def runAsync(implicit executionContext: ExecutionContext,
-                 orientClient: OrientClient): EitherT[Future, Throwable, A] =
-      runAsync(enableTransactions = true)
+    def runGraphAsync(implicit executionContext: ExecutionContext,
+                      orientClient: OrientClient): EitherT[Future, Throwable, A] =
+      runGraphAsync(enableTransactions = true)
 
     /**
       * Runs the orientIO resulting in a Either Transformer of Future Either[Throwable, A]
       */
-    def runAsync(enableTransactions: Boolean)
-                (implicit executionContext: ExecutionContext,
+    def runGraphAsync(enableTransactions: Boolean)
+                     (implicit executionContext: ExecutionContext,
                      orientClient: OrientClient): EitherT[Future, Throwable, A] = {
       implicit val graph: OrientBaseGraph = if(enableTransactions) orientClient.graph
       else orientClient.graphNoTransaction

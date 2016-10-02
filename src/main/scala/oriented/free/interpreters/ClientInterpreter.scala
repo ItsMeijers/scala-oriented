@@ -58,6 +58,7 @@ trait ClientInterpreter[G[_]] extends (ClientDSL ~> G) {
     case CreateEdgeType(orientFormat)             => createEdgeType(orientFormat)
     case AddVertex(vertexModel, orientFormat)     => addVertex(vertexModel, orientFormat)
     case AddEdge(edgeModel, iv, ov, orientFormat) => addEdge(edgeModel, iv, ov, orientFormat)
+    case Shutdown(close)                          => graph.shutdown(close)
   }
 
 }
