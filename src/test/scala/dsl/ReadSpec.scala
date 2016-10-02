@@ -13,7 +13,7 @@ class ReadSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
   implicit val testFormat: OrientFormat[Test.type] = new OrientFormat[Test.type] {
 
-    override def format: OrientRead[Test.type] = read.read(Test)
+    override def read: OrientRead[Test.type] = read(Test)
 
     override def name: String = "Test"
 
