@@ -56,6 +56,8 @@ package object syntax {
 
       val result = orientIO.foldMap(unsafeInterpreter)
 
+      if(enableTransactions) graph.commit()
+
       graph.shutdown()
 
       result
@@ -82,7 +84,9 @@ package object syntax {
 
       val result = orientIO.foldMap(tryInterpreter)
 
-      if(result.isFailure && enableTransactions) graph.rollback()
+      if(result.isFailure && enableTransactions)
+        graph.rollback()
+      else if(enableTransactions) graph.commit()
 
       graph.shutdown()
 
@@ -135,6 +139,7 @@ package object syntax {
       })
 
       result.onSuccess(PartialFunction { _ =>
+        if(enableTransactions) graph.commit()
         graph.shutdown()
       })
 
@@ -158,10 +163,10 @@ package object syntax {
       else orientClient.graphNoTransaction
 
       val interpreter: OrientProgram ~> EitherT[Future, Throwable, ?] =
-        SafeAsyncEdgeInterpreter() or
-       (SafeAsyncVertexInterpreter() or
+        SafeAsyncEdgeInterpreter()    or
+       (SafeAsyncVertexInterpreter()  or
        (SafeAsyncElementInterpreter() or
-       (SafeAsyncClientInterpreter() or
+       (SafeAsyncClientInterpreter()  or
        SafeAsyncSqlInterpreter())))
 
 
@@ -176,6 +181,7 @@ package object syntax {
 
       isLeft.onSuccess(PartialFunction { failed =>
         if(failed && enableTransactions) graph.rollback()
+        else if(enableTransactions) graph.commit()
         graph.shutdown()
       })
 
