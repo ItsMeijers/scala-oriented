@@ -1,10 +1,7 @@
 package oriented
 
 import java.util.Date
-
-import cats.Id
 import cats.data.Reader
-import cats.free.Free
 import com.tinkerpop.blueprints.impls.orient.OrientElement
 import oriented.free.dsl._
 import oriented.free.interpreters.ReadInterpreter
