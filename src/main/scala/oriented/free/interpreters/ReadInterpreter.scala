@@ -14,6 +14,7 @@ import com.tinkerpop.blueprints.impls.orient.OrientElement
 object ReadInterpreter extends (ReadDSL ~> Reader[OrientElement, ?]) {
   override def apply[A](fa: ReadDSL[A]): Reader[OrientElement, A] = Reader((o: OrientElement) =>
     fa match {
+      case Read(a)                 => a
       case ReadBoolean(fieldName)  => o.getProperty[Boolean](fieldName)
       case ReadInt(fieldName)      => o.getProperty[Int](fieldName)
       case ReadShort(fieldName)    => o.getProperty[Short](fieldName)

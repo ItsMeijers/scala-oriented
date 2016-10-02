@@ -5,9 +5,15 @@ import java.util.Date
 import cats.free.{Free, Inject}
 
 /**
-  * DSL for reading OrientElements to a specific A
+  * DSL for reading OrientElements to a specific A.
   */
 sealed trait ReadDSL[A]
+
+/**
+  * Pure action to insert A into ReadDSL.
+  * Usage: case classes with no fields or objects.
+  */
+case class Read[A](a: A) extends ReadDSL[A]
 
 case class ReadBoolean(fieldName: String) extends ReadDSL[Boolean]
 
@@ -28,6 +34,9 @@ case class ReadString(fieldName: String) extends ReadDSL[String]
 case class ReadBinary(fieldName: String) extends ReadDSL[List[Byte]]
 
 class Reads[F[_]](implicit inject: Inject[ReadDSL, F]) {
+
+  def read[R](r: R): Free[F, R] =
+    Free.inject[ReadDSL, F](Read(r))
 
   def readBoolean(fieldName: String): Free[F, Boolean] =
     Free.inject[ReadDSL, F](ReadBoolean(fieldName))
