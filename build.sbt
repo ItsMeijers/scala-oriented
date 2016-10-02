@@ -28,7 +28,6 @@ libraryDependencies ++= Seq(
   , "org.scalatest"                %% "scalatest"        % "3.0.0"  % "test"
   , "org.scalacheck"               %% "scalacheck"       % "1.13.2" % "test"
   , "org.typelevel"                %% "cats"             % "0.7.2"
-  , "com.projectseptember"         %% "freek"            % "0.6.0"
   , "org.spire-math"               %% "kind-projector"   % "0.7.1"
   , "com.milessabin"               %% "si2712fix-plugin" % "1.2.0" cross CrossVersion.full
 )
