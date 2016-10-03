@@ -37,6 +37,12 @@ sealed trait SqlInterpreter[G[_]] extends (SqlDSL ~> G) {
       Edge(f(orientEdge), orientEdge)
     }
 
+  private def executeCommand[A](query: String, f: OrientElement => A): A =
+    f(graph
+      .command(new OCommandSQL(query))
+      .execute[OrientDynaElementIterable]()
+      .head.asInstanceOf[OrientElement])
+
   /**
     * Evaluates each SqlDSL A constructor to A
     */
@@ -49,6 +55,7 @@ sealed trait SqlInterpreter[G[_]] extends (SqlDSL ~> G) {
     case EdgeList(query,f)        => executeCommandEdge(query, f.run)
     case VertexNel(query, f)      => executeCommandVertex(query, f.run).toNel.get
     case EdgeNel(query, f)        => executeCommandEdge(query, f.run).toNel.get
+    case As(query, field, f)      => executeCommand(query, f.run)
     case UnitDSL(query)           =>
       graph.command(new OCommandSQL(query)).execute()
       ()

@@ -1,5 +1,6 @@
 package oriented.syntax
 
+import cats.data.Reader
 import oriented._
 import oriented.free.dsl.Sqls._
 
@@ -8,7 +9,7 @@ import oriented.free.dsl.Sqls._
   */
 case class SQLStatement(query: String) {
 
-  implicit def sqlsId = sqls[OrientProgram]
+  implicit def sql = sqls[OrientProgram]
 
   /**
     * TODO
@@ -23,7 +24,12 @@ case class SQLStatement(query: String) {
   /**
     * TODO
     */
-  def update: OrientIO[Unit] = sqlsId.unit(query)
+  def update: OrientIO[Unit] = sql.unit(query)
+
+  /**
+    * TODO
+    */
+  def as[A](field: String): OrientIO[A] = sql.as[A](query, field, Reader(_.getProperty[A](field)))
 
 
 }

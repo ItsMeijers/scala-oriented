@@ -268,11 +268,12 @@ println(bidirectionalResult)
 If the result type of an OrientResult is a simple type such as `String` or `Int`, then there is no need to write a special `OrientFormat` instance for these types. Below is an example shown on how to query simple types.
 
 ```scala
-val countUser: OrientIO[Long] = sql"SELECT COUNT(*) as count FROM User".as[Long]("count")
-val countResult: Long = countUser.runGraphUnsafe
+val numberOfUsers: OrientIO[Long] = 
+  sql"SELECT COUNT(*) as count FROM User".as[Long]("count")
 
-println(countResult)
-//  
+val numberResult: Long = numberOfUsers.runGraphUnsafe
+println(numberResult)
+// [info] 11
 ```
 
 ### Querying Vertices

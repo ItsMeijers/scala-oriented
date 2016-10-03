@@ -56,6 +56,11 @@ case class EdgeNel[A](query: String, reader: Reader[OrientElement, A]) extends S
   */
 case class UnitDSL(query: String) extends SqlDSL[Unit]
 
+/**
+  * Constructor for SQL action resulting in Simple type such as Long, Int, String etc.
+  */
+case class As[A](query: String, field: String, reader: Reader[OrientElement, A]) extends SqlDSL[A]
+
 class Sqls[F[_]](implicit inject: Inject[SqlDSL, F]) {
 
   def uniqueVertex[A](query: String, reader: Reader[OrientElement, A]): Free[F, Id[Vertex[A]]] =
@@ -82,8 +87,11 @@ class Sqls[F[_]](implicit inject: Inject[SqlDSL, F]) {
   def edgeNel[A](query: String, reader: Reader[OrientElement, A]): Free[F, NonEmptyList[Edge[A]]] =
     Free.inject[SqlDSL, F](EdgeNel[A](query, reader))
 
-  def unit[A](query: String): Free[F, Unit] =
+  def unit(query: String): Free[F, Unit] =
     Free.inject[SqlDSL, F](UnitDSL(query))
+
+  def as[A](query: String, field: String, reader: Reader[OrientElement, A]): Free[F, A] =
+    Free.inject[SqlDSL, F](As[A](query, field, reader))
 
 }
 
