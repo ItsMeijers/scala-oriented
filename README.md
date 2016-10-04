@@ -32,14 +32,15 @@ The API Docs can be found at [itsmeijers.com/docs/scala-oriented/](http://itsmei
 The next sections will show code examples of common use cases, using scala-oriented. This is intended to show how the library should be used. In the examples a _"Twitter like"_ graph structure will be shown, the following case classes need to be defined to follow along with the examples.
 
 ```scala
-// Data definitions for the Vertices
+import java.util.Date
+
+// Data definitions of the Vertices
 case class User(name: String, description: String)
-case class Tweet(content: String, postDate: java.util.Date)
+case class Tweet(content: String, postDate: Date)
   
-// Date definitions for the Edges  
-case class Follows(from: java.util.Date)
-sealed trait Tweets  
-case object Tweets extends Tweets // No need for Tweets.type :)
+// Date definitions of the Edges  
+case class Follows(from: Date)
+case object Tweets
 ```
 
 ### OrientClient
@@ -127,9 +128,10 @@ __* Experimental feature: OrientDB elements are not thread-safe.__
 
 ### Creating a VertexType
 
-Vertex schemas _can_ be created before inserting any vertices, resulting in an `VertexType[A]`, where `A` is the vertex model. 
+Vertex schemas _can_ be created before inserting any vertices, resulting in an `VertexType[A]`, where `A` is the vertex model. The `createVertexType[A]` function is available on the client.
 
 ```scala
+// Create a VertexType of type User (OrientFormat[User] needs to be implicitly in scope)
 val uType: OrientIO[VertexType[User]] = client.createVertexType[User]
 
 // OrientIO Actions can be sequenced
@@ -149,14 +151,11 @@ println(vTypesResult)
 
 ### Adding a Vertex
 
-- addVertex function client
-- Vertex type class
-  - element
-  - Functions
+Adding a Vertex is done by calling the `addVertex[A](a: A)` function from the client, where `A` is the vertex you want to save to OrientDB. It results in a `Vertex[A]`, when running the graph action. Vertex is a typeclass, that provides typed functions to the OrientVertex element. You can access the model in the `element` property. For the the functions on Vertex, see the API Docs or your favourite auto-completion.
 
 ```scala
-val thomas: User = User("Thomas", "Noobgrammer")  
-val user: OrientIO[Vertex[User]] = client.addVertex(thomas)
+// Adding a single Vertex
+val user: OrientIO[Vertex[User]] = client.addVertex(User("Thom", "Noobgrammer"))
 val userResult: Vertex[User] = user.runGraphUnsafe
 
 println(userResult)
@@ -165,17 +164,17 @@ println(userResult)
 // Sequence off adding vertices
 val users: OrientIO[List[Vertex[User]]] =
   for {
-    joe    <- client.addVertex(User("Joe", ""))
-    bob    <- client.addVertex(User("Bob", ""))
-    elodie <- client.addVertex(User("Elodie", ""))
+    joe    <- client.addVertex(User("Joe", "Manager"))
+    bob    <- client.addVertex(User("Bob", "Programmer"))
+    elodie <- client.addVertex(User("Elodie", "Programmer"))
   } yield List(joe, bob, elodie)
 
 val usersResult: List[Vertex[User]] = users.runGraphUnsafe
 
 usersResult.foreach(println)
-// [info] Vertex(User(Joe,),v(User)[#26:0])
-// [info] Vertex(User(Bob,),v(User)[#27:0])
-// [info] Vertex(User(Elodie,),v(User)[#28:0])
+// [info] Vertex(User(Joe,Manager),v(User)[#26:0])
+// [info] Vertex(User(Bob,Programmer),v(User)[#27:0])
+// [info] Vertex(User(Elodie,Programmer),v(User)[#28:0])
 ```
 
 ### Creating an EdgeType
@@ -198,15 +197,12 @@ println(eTypesResult)
 
 ### Adding an Edge
 
-- Add edge function on client
-- Syntatic suger
-- Edge typeclass 
-  - Element
-  - functions
+An edge gets created between to vertices, by calling the `addEdge(edgeModel: A, inVertex[Vertex[B]], outVertex: Vertex[C])` function on client. The Edge typeclass is similair to the Vertex typeclass, but represents a typed Edge. The Edge model can be retrieved from the `element` property. The `Edge` typeclass currently has four functions: `getInVertex`, `getOutVertex`, `getVertices` (which is a combination of in and out) and `update(newModel: A)` (See updating Updating Vertices & Edges).
 
 ```scala
+// User vertices taken from previous example
 val thomasFollowsJoe: OrientIO[Edge[Follows]] =
-    client.addEdge(Follows(new java.util.Date()), userResult, usersResult.head)
+    client.addEdge(Follows(new Date()), userResult, usersResult.head)
 
 val tFollowsJResult: Edge[Follows] = thomasFollowsJoe.runGraphUnsafe
 
@@ -214,16 +210,16 @@ println(tFollowsJResult)
 // [info] Edge(Follows(Mon Oct 03 15:00:42 CEST 2016),e[#49:0][#26:0-Follows->#25:0])
 ```
 
-### Add Edge from Vertex
+### Adding an Edge from the Vertex Typeclass
 
-- Add edge function on Vertex
+An edge can also be added from a Vertex instance, by calling the`addVertex(edgeModel: A, outVertex: Vertex[B]): Edge[C]` function. The function will return the created edge between the in and out vertices. Below are a couple of examples shown of creating vertices and edges.
 
 ```scala
 // Vertex[User] -- Edge[Follows] --> Vertex[User]
 val userFollowsUser: OrientIO[(Vertex[User], Edge[Follows], Vertex[User])] = 
   for {
-    bert  <- client.addVertex(User("Bert", "DevOps"))
-    ernie <- client.addVertex(User("Ernie", "Manager"))
+    bert    <- client.addVertex(User("Bert", "DevOps"))
+    ernie   <- client.addVertex(User("Ernie", "Manager"))
     follows <- bert.addEdge(Follows(new Date()), ernie)
   } yield (bert, follows, ernie)
 
@@ -250,8 +246,8 @@ println(uttResult)
 // Vertex[User] <-- Edge[Follows] --> Vertex[User]
 val bidirectionalFollow: OrientIO[(Edge[Follows], Edge[Follows])] = 
   for {
-    hank <- client.addVertex(User("Hank", "Developer"))
-    suzan <- client.addVertex(User("Suzan", "Developer"))
+    hank      <- client.addVertex(User("Hank", "Developer"))
+    suzan     <- client.addVertex(User("Suzan", "Developer"))
     hFollowsS <- hank.addEdge(Follows(new Date()), suzan)
     sFollowsH <- suzan.addEdge(Follows(new Date()), hank)
   } yield (hFollowsS, sFollowsH)
@@ -265,28 +261,54 @@ println(bidirectionalResult)
 
 ### Querying Simple Types
 
-If the result type of an OrientResult is a simple type such as `String` or `Int`, then there is no need to write a special `OrientFormat` instance for these types. Below is an example shown on how to query simple types.
+If the result type of an OrientResult is a simple type such as `String` or `Int`, then there is no need to write a special `OrientFormat` instance for these types. Instead of using the vertex or edge function on the sql query, use the `as[A](field)` function where `A` is the simple type and field is the  `String` representing the field that you want to select as the simple type.
 
 ```scala
-val numberOfUsers: OrientIO[Long] = 
-  sql"SELECT COUNT(*) as count FROM User".as[Long]("count")
+val numberOfUsers: Long = sql"SELECT COUNT(*) as count FROM User"
+  .as[Long]("count")
+  .runGraphUnsafe
 
-val numberResult: Long = numberOfUsers.runGraphUnsafe
-println(numberResult)
-// [info] 11
+println(numberOfUsers)
+// [info] 11 
 ```
 
-### Querying Vertices
+### Querying
 
-Vertices can be queried using the extended SQL notation from OrientDB. By using the sql interpolation function, like inserting, the query can be created. The vertex function specifies the type parameter of the Vertex class. After this the result context is specified with another function, such as list, single, opt. Once the context is specified the query can be composed or executed by calling the run function. 
+SQL queries can be contstructed using the `sql` interpolation modifier.
+
+```scala
+val sqlStatement: SQLStatement = sql"SELECT * FROM User"
+```
+
+**Explain SQL Statement**
+
+| Function               | Return Type      | Description                              |
+| ---------------------- | ---------------- | ---------------------------------------- |
+| `vertex[A]`            | `VertexQuery[A]` | Creates a query that will result in a `Vertex[A]`. |
+| `edge[A]`              | `EdgeQuery[A]`   | Creates a query that will result in an `Edge[A]` |
+| `update`               | `Unit`           | Creates a query that will result in Unit. |
+| `as[A](field: String)` | `OrientIO[A]`    | See Querying Simple Types.               |
+
+**Explain Vertex and Edge Query.**
+
+| Function | Vertex Return Type        | Edge Return Type        | Description                              |
+| :------- | ------------------------- | ----------------------- | ---------------------------------------- |
+| `unique` | `Vertex[A]`               | `Edge[A]`               | Returns a unique element.                |
+| `option` | `Option[Vertex[A]]`       | `Option[Edge[A]]`       | Returns a optional element. If there are more than one elements only the first gets returned as a Some. |
+| `nel`    | `NonEmptyList[Vertex[A]]` | `NonEmptyList[Edge[A]]` | Returns a non empty list.                |
+| `list`   | `List[Vertex[A]]`         | `List[Edge[A]]`         | Returns a list.                          |
+
+### Querying Vertices Examples
+
+Below are some examples shown of querying vertices.
 
 ```scala
 
 ```
 
-### Querying Edges
+### Querying Edges Examples
 
-Querying edges is the same as vertices, only the edge function is called after the sql interpolation specifying the type parameter of the resulting Edge class. 
+Below are some examples show of querying edges.
 
 ```scala
 def findByOrderId(orderId: String): OrientResult[List[Edge[Ordered]]] = 
@@ -298,61 +320,23 @@ fed findById(id: String): OptionalOrientResult[Edge[Ordered]] =
 
 ### Updating Vertices & Edges
 
-```scala
-
-```
-
-### Actions on Vertex & Edge
-
-The result type of querying or inserting is an OrientResult or alike, inside this OrientResult however is another typeclass the Vertex or Edge. This typeclass makes the original OrientVertex and OrientEdge more typeful and allows calling methods to sequence multiple actions together. See the ScalaDocs for a full overview of all the actions available on the Vertex and Edge classes.
+Below are some examples shown of updating edges and vertices with both queries and functions on the `Vertex` and `Edge` typeclasses. Note that the functions return the new vertices and models, where updates on queries do not.
 
 ```scala
 
 ```
-
-### Syntactic Sugar
-
-```scala
-// Syntactic sugar, creates the Vertices and Edges and OrientIOs to save them to the DB
-val martinFollowsJonas: OrientIO[(Vertex[User], Edge[Follows], Vertex[User])] =
-  User("Martin", "Scala") -- Follows(new Date()) --> User("Jonas", "Akka")
-
-val mjResult: (Vertex[User], Edge[Follows], Vertex[User]) = 
-  martinFollowsJonas.runGraphUnsafe
-
-println(mjResult)
-// [info] (Vertex(User(Martin,Scala),v(User)[#29:0]),Edge(Follows(Mon Oct 03 15:09:30 CEST 2016),e[#50:0][#29:0-Follows->#30:0]),Vertex(User(Jonas,Akka),v(User)[#30:0]))
-  
-// Bidirectional 
-val bidirectional: OrientIO[(Edge[Follows], Edge[Follows])] =
-  for {
-    t3 <- User("Thomas", "Developer") -- Follows(new Date()) --> User("Micheal", "")
-    e  <- t3._1 <-- Follows(new Date()) t3._3
-  } yield (t3._2, e)
-```
-
-
 
 ## Documentation and Support
 
 - [API Docs](http://itsmeijers.com/docs/scala-oriented/)
 - [OrientDB Documentation](http://orientdb.com/docs/last/)
 - [OrientDB.com](http://www.orientdb.com)
-- [OrientDB Github Repo](https://github.com/orientechnologies/orientdb)
 - Extended Guide (TODO)
-
-## Design Choices
-
-__TODO:__ This section will explain the design choices made in developing this wrapper, which will be open for discussion and improvement!
 
 ## Feature List
 
-Below a list of wanted features is shown, this list is however not yet complete, if you have anyhting you want to add to the list please submit a PR. Features that are checked are implemented, others still have to be done (your help is welcome see Contributing below).
-
-- [ ] a task list item
-- [ ] list syntax required
+_TODO_
 
 ## Contributing
 
-- Guidelines
-- Running Test
+_TODO_
