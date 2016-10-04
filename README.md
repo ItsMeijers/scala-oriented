@@ -280,7 +280,7 @@ SQL queries can be contstructed using the `sql` interpolation modifier.
 val sqlStatement: SQLStatement = sql"SELECT * FROM User"
 ```
 
-**Explain SQL Statement**
+This creates a SQLStatement object which has the following function showed in the table below.
 
 | Function               | Return Type      | Description                              |
 | ---------------------- | ---------------- | ---------------------------------------- |
@@ -289,7 +289,7 @@ val sqlStatement: SQLStatement = sql"SELECT * FROM User"
 | `update`               | `Unit`           | Creates a query that will result in Unit. |
 | `as[A](field: String)` | `OrientIO[A]`    | See Querying Simple Types.               |
 
-**Explain Vertex and Edge Query.**
+The `vertex[A]` and `edge[A]` function return a `VertexQuery[A]` or `EdgeQuery[A]` that needs one more function call to specify its context, resulting in an `OrientIO[R]`, where `R` is for instance `Option[Vertex[A]]`.
 
 | Function | Vertex Return Type        | Edge Return Type        | Description                              |
 | :------- | ------------------------- | ----------------------- | ---------------------------------------- |
@@ -303,19 +303,15 @@ val sqlStatement: SQLStatement = sql"SELECT * FROM User"
 Below are some examples shown of querying vertices.
 
 ```scala
-
+TODO
 ```
 
 ### Querying Edges Examples
 
-Below are some examples show of querying edges.
+Below are some examples shown of querying edges.
 
 ```scala
-def findByOrderId(orderId: String): OrientResult[List[Edge[Ordered]]] = 
-  sql"SELECT * FROM Ordered WHERE orderId = $orderId".edge[Ordered].list.run
-  
-fed findById(id: String): OptionalOrientResult[Edge[Ordered]] =
-  sql"SELECT * FROM Ordered WHERE id = $id".edge[Ordered].opt.run
+TODO
 ```
 
 ### Updating Vertices & Edges
@@ -323,7 +319,7 @@ fed findById(id: String): OptionalOrientResult[Edge[Ordered]] =
 Below are some examples shown of updating edges and vertices with both queries and functions on the `Vertex` and `Edge` typeclasses. Note that the functions return the new vertices and models, where updates on queries do not.
 
 ```scala
-
+TODO
 ```
 
 ## Documentation and Support
