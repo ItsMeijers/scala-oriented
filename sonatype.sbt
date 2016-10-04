@@ -7,7 +7,7 @@ pomExtra in Global := {
       </license>
     </licenses>
     <scm>
-      <connection>scm:git:github.com/ThomasMeijers/scala-oriented.git</connection>https://github.com/ThomasMeijers/scala-oriented.git
+      <connection>scm:git:github.com/ThomasMeijers/scala-oriented.git</connection>
       <developerConnection>scm:git:git@github.com:ThomasMeijers/scala-oriented.git</developerConnection>
       <url>github.com/ThomasMeijers/scala-oriented.git</url>
     </scm>
