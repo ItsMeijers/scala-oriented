@@ -1,6 +1,7 @@
 package oriented.free.dsl
 
 import cats.free.{Free, Inject}
+import com.tinkerpop.blueprints.impls.orient.{OrientElement, OrientVertex}
 import oriented._
 
 /**
@@ -54,6 +55,8 @@ case class GetVertices[A, B, C](vertex: Vertex[A],
                                 formatEdge: OrientFormat[B],
                                 formatVertex: OrientFormat[C]) extends VertexDSL[List[Vertex[C]]]
 
+case class UpdateVertex[A](newModel: A, orientVertex: OrientVertex, orientFormat: OrientFormat[A]) extends VertexDSL[Vertex[A]]
+
 // TODO
 case class SaveVertex()
 
@@ -86,6 +89,9 @@ class Vertices[F[_]](implicit inject: Inject[VertexDSL, F]) {
                            formatEdge: OrientFormat[B],
                            formatVertex: OrientFormat[C]): Free[F, List[Vertex[C]]] =
     Free.inject[VertexDSL, F](GetVertices(vertex, direction, formatEdge, formatVertex))
+
+  def update[A](newModel: A, orientVertex: OrientVertex, orientFormat: OrientFormat[A]) =
+    Free.inject[VertexDSL, F](UpdateVertex(newModel, orientVertex, orientFormat))
 
 }
 

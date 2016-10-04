@@ -74,6 +74,11 @@ sealed trait VertexInterpreter[M[_]] extends (VertexDSL ~> M) {
         .map { orientVertex =>
           Vertex(orientFormatVertex.reader.run(orientVertex), orientVertex)
         }.toList
+    case UpdateVertex(newModel, orientVertex, orientFormat) =>
+      orientFormat.properties(newModel).foreach { case (key, value) =>
+        orientVertex.setProperty(key, value)
+      }
+      Vertex(newModel, orientVertex)
   }
 }
 

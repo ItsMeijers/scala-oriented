@@ -96,6 +96,8 @@ case class Vertex[A](element: A, orientElement: OrientVertex) extends Element[A]
                         formatVertex: OrientFormat[V]): OrientIO[List[Vertex[V]]] =
     V.getVertices(this, direction, formatEdge, formatVertex)
 
+  def update(newModel: A)(implicit orientFormat: OrientFormat[A]): OrientIO[Vertex[A]] =
+    V.update(newModel, orientElement, orientFormat)
 }
 
 /**
@@ -116,5 +118,8 @@ case class Edge[A](element: A, orientElement: OrientEdge) extends Element[A] {
       inVertex <- getInVertex(inFormat)
       outVertex <- getOutVertex(outFormat)
     } yield (inVertex, outVertex)
+
+  def update(newModel: A)(implicit orientFormat: OrientFormat[A]): OrientIO[Edge[A]] =
+    Ed.update(newModel, orientElement, orientFormat)
 
 }

@@ -4,7 +4,8 @@ import cats.data.EitherT
 import cats.{Id, ~>}
 import com.tinkerpop.blueprints.Direction
 import oriented._
-import oriented.free.dsl.{GetInVertex, GetOutVertex, EdgeDSL}
+import oriented.free.dsl.{EdgeDSL, GetInVertex, GetOutVertex, UpdateEdge}
+
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -25,8 +26,13 @@ sealed trait EdgeInterpreter[G[_]] extends (EdgeDSL ~> G) {
     * Interprets an constructor of EdgeDSL[A] resulting in the A.
     */
   def interpretDSL[A](fa: EdgeDSL[A]): A = fa match {
-    case GetInVertex(edge, orientFormat) => getVertex(edge, Direction.IN, orientFormat)
+    case GetInVertex(edge, orientFormat)  => getVertex(edge, Direction.IN, orientFormat)
     case GetOutVertex(edge, orientFormat) => getVertex(edge, Direction.OUT, orientFormat)
+    case UpdateEdge(newModel, orientEdge, orientFormat) =>
+      orientFormat.properties(newModel).foreach { case (key, value) =>
+        orientEdge.setProperty(key, value)
+      }
+      Edge(newModel, orientEdge)
   }
 
 }
