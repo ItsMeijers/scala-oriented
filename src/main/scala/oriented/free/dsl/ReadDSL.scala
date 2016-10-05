@@ -17,19 +17,35 @@ case class Read[A](a: A) extends ReadDSL[A]
 
 case class ReadBoolean(fieldName: String) extends ReadDSL[Boolean]
 
+case class ReadBooleanOpt(fieldName: String) extends ReadDSL[Option[Boolean]]
+
 case class ReadInt(fieldName: String) extends ReadDSL[Int]
+
+case class ReadIntOpt(fieldName: String) extends ReadDSL[Option[Int]]
 
 case class ReadShort(fieldName: String) extends ReadDSL[Short]
 
+case class ReadShortOpt(fieldName: String) extends ReadDSL[Option[Short]]
+
 case class ReadLong(fieldName: String) extends ReadDSL[Long]
+
+case class ReadLongOpt(fieldName: String) extends ReadDSL[Option[Long]]
 
 case class ReadFloat(fieldName: String) extends ReadDSL[Float]
 
+case class ReadFloatOpt(fieldName: String) extends ReadDSL[Option[Float]]
+
 case class ReadDouble(fieldName: String) extends ReadDSL[Double]
+
+case class ReadDoubleOpt(fieldName: String) extends ReadDSL[Option[Double]]
 
 case class ReadDatetime(fieldName: String) extends ReadDSL[Date]
 
+case class ReadDatetimeOpt(fieldName: String) extends ReadDSL[Option[Date]]
+
 case class ReadString(fieldName: String) extends ReadDSL[String]
+
+case class ReadStringOpt(fieldName: String) extends ReadDSL[Option[String]]
 
 case class ReadBinary(fieldName: String) extends ReadDSL[List[Byte]]
 
@@ -41,26 +57,50 @@ class Reads[F[_]](implicit inject: Inject[ReadDSL, F]) {
   def readBoolean(fieldName: String): Free[F, Boolean] =
     Free.inject[ReadDSL, F](ReadBoolean(fieldName))
 
+  def readBooleanOpt(fieldName: String): Free[F, Option[Boolean]] =
+    Free.inject[ReadDSL, F](ReadBooleanOpt(fieldName))
+
   def readInt(fieldName: String): Free[F, Int] =
     Free.inject[ReadDSL, F](ReadInt(fieldName))
+
+  def readIntOpt(fieldName: String): Free[F, Option[Int]] =
+    Free.inject[ReadDSL, F](ReadIntOpt(fieldName))
 
   def readShort(fieldName: String): Free[F, Short] =
     Free.inject[ReadDSL, F](ReadShort(fieldName))
 
+  def readShortOpt(fieldName: String): Free[F, Option[Short]] =
+    Free.inject[ReadDSL, F](ReadShortOpt(fieldName))
+
   def readLong(fieldName: String): Free[F, Long] =
     Free.inject[ReadDSL, F](ReadLong(fieldName))
+
+  def readLongOpt(fieldName: String): Free[F, Option[Long]] =
+    Free.inject[ReadDSL, F](ReadLongOpt(fieldName))
 
   def readFloat(fieldName: String): Free[F, Float] =
     Free.inject[ReadDSL, F](ReadFloat(fieldName))
 
+  def readFloatOpt(fieldName: String): Free[F, Option[Float]] =
+    Free.inject[ReadDSL, F](ReadFloatOpt(fieldName))
+
   def readDouble(fieldName: String): Free[F, Double] =
     Free.inject[ReadDSL, F](ReadDouble(fieldName))
+
+  def readDoubleOpt(fieldName: String): Free[F, Option[Double]] =
+    Free.inject[ReadDSL, F](ReadDoubleOpt(fieldName))
 
   def readDatetime(fieldName: String): Free[F, Date] =
     Free.inject[ReadDSL, F](ReadDatetime(fieldName))
 
+  def readDatetimeOpt(fieldName: String): Free[F, Option[Date]] =
+    Free.inject[ReadDSL, F](ReadDatetimeOpt(fieldName))
+
   def readString(fieldName: String): Free[F, String] =
     Free.inject[ReadDSL, F](ReadString(fieldName))
+
+  def readStringOpt(fieldName: String): Free[F, Option[String]] =
+    Free.inject[ReadDSL, F](ReadStringOpt(fieldName))
 
   def readBinary(fieldName: String): Free[F, List[Byte]] =
     Free.inject[ReadDSL, F](ReadBinary(fieldName))

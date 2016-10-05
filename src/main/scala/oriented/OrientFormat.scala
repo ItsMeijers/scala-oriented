@@ -36,19 +36,35 @@ trait OrientFormat[A] {
 
   def readBoolean(fieldName: String): OrientRead[Boolean] = element.readBoolean(fieldName)
 
+  def readBooleanOpt(fieldName: String): OrientRead[Option[Boolean]] = element.readBooleanOpt(fieldName)
+
   def readInt(fieldName: String): OrientRead[Int] = element.readInt(fieldName)
+
+  def readIntOpt(fieldName: String): OrientRead[Option[Int]] = element.readIntOpt(fieldName)
 
   def readShort(fieldName: String): OrientRead[Short] = element.readShort(fieldName)
 
+  def readShortOpt(fieldName: String): OrientRead[Option[Short]] = element.readShortOpt(fieldName)
+
   def readLong(fieldName: String): OrientRead[Long] = element.readLong(fieldName)
+
+  def readLongOpt(fieldName: String): OrientRead[Option[Long]] = element.readLongOpt(fieldName)
 
   def readFloat(fieldName: String): OrientRead[Float] = element.readFloat(fieldName)
 
+  def readFloatOpt(fieldName: String): OrientRead[Option[Float]] = element.readFloatOpt(fieldName)
+
   def readDouble(fieldName: String): OrientRead[Double] = element.readDouble(fieldName)
+
+  def readDoubleOpt(fieldName: String): OrientRead[Option[Double]] = element.readDoubleOpt(fieldName)
 
   def readDatetime(fieldName: String): OrientRead[Date] = element.readDatetime(fieldName)
 
+  def readDatetimeOpt(fieldName: String): OrientRead[Option[Date]] = element.readDatetimeOpt(fieldName)
+
   def readString(fieldName: String): OrientRead[String] = element.readString(fieldName)
+
+  def readStringOpt(fieldName: String): OrientRead[Option[String]] = element.readStringOpt(fieldName)
 
   def readBinary(fieldName: String): OrientRead[List[Byte]] = element.readBinary(fieldName)
 
