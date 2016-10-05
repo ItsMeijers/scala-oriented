@@ -61,6 +61,16 @@ case class UnitDSL(query: String) extends SqlDSL[Unit]
   */
 case class As[A](query: String, field: String, reader: Reader[OrientElement, A]) extends SqlDSL[A]
 
+/**
+  * Constructor for SQL insert resulting in an Edge
+  */
+case class InsertEdge[A](query: String, reader: Reader[OrientElement, A]) extends SqlDSL[Id[Edge[A]]]
+
+/**
+  * Constructor for SQL insert resulting in an Vertex
+  */
+case class InsertVertex[A](query: String, reader: Reader[OrientElement, A]) extends SqlDSL[Id[Vertex[A]]]
+
 class Sqls[F[_]](implicit inject: Inject[SqlDSL, F]) {
 
   def uniqueVertex[A](query: String, reader: Reader[OrientElement, A]): Free[F, Id[Vertex[A]]] =
@@ -93,6 +103,11 @@ class Sqls[F[_]](implicit inject: Inject[SqlDSL, F]) {
   def as[A](query: String, field: String, reader: Reader[OrientElement, A]): Free[F, A] =
     Free.inject[SqlDSL, F](As[A](query, field, reader))
 
+  def insertEdge[A](query: String, reader: Reader[OrientElement, A]): Free[F, Id[Edge[A]]] =
+    Free.inject[SqlDSL, F](InsertEdge(query, reader))
+
+  def insertVertex[A](query: String, reader: Reader[OrientElement, A]): Free[F, Id[Vertex[A]]] =
+    Free.inject[SqlDSL, F](InsertVertex(query, reader))
 }
 
 object Sqls {

@@ -43,6 +43,11 @@ sealed trait Query[A] {
     */
   def unique: OrientIO[E]
 
+  /**
+    * Insert query resulting in a single E
+    */
+  def insert: OrientIO[E]
+
 }
 
 /**
@@ -66,6 +71,9 @@ class VertexQuery[A](val query: String, val orientFormat: OrientFormat[A])(impli
   def unique: OrientIO[E] =
     uniqueVertex[A](query, orientFormat.reader)
 
+  def insert: OrientIO[E] =
+    insertVertex[A](query, orientFormat.reader)
+
 }
 
 /**
@@ -88,5 +96,8 @@ class EdgeQuery[A](val query: String, val orientFormat: OrientFormat[A])(implici
 
   def unique: OrientIO[E] =
     uniqueEdge[A](query, orientFormat.reader)
+
+  def insert: OrientIO[E] =
+    insertEdge[A](query, orientFormat.reader)
 
 }

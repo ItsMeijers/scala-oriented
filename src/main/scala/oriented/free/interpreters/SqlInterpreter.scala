@@ -1,13 +1,14 @@
 package oriented.free.interpreters
 
 import scala.collection.JavaConversions._
-import cats.data.EitherT
+import cats.data.{EitherT, Reader}
 import cats.{Id, ~>}
 import cats.syntax.list._
 import com.orientechnologies.orient.core.sql.OCommandSQL
 import com.tinkerpop.blueprints.impls.orient._
 import oriented.{Edge, Element, Vertex}
 import oriented.free.dsl._
+
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -25,37 +26,42 @@ sealed trait SqlInterpreter[G[_]] extends (SqlDSL ~> G) {
     .map(toElement)
     .toList
 
-  private def executeCommandVertex[A](query: String, f: OrientElement => A): List[Vertex[A]] =
+  private def executeCommandVertex[A](query: String, f: Reader[OrientElement, A]): List[Vertex[A]] =
     executeIterable[Vertex[A]](query) { r =>
       val orientVertex = r.asInstanceOf[OrientVertex]
       Vertex(f(orientVertex), orientVertex)
     }
 
-  private def executeCommandEdge[A](query: String, f: OrientElement => A): List[Edge[A]] =
+  private def executeCommandEdge[A](query: String, f: Reader[OrientElement,A]): List[Edge[A]] =
     executeIterable[Edge[A]](query) { r =>
       val orientEdge = r.asInstanceOf[OrientEdge]
       Edge(f(orientEdge), orientEdge)
     }
 
-  private def executeCommand[A](query: String, f: OrientElement => A): A =
+  private def executeCommand[A](query: String, f: Reader[OrientElement, A]): A =
     f(graph
       .command(new OCommandSQL(query))
       .execute[OrientDynaElementIterable]()
       .head.asInstanceOf[OrientElement])
 
+  private def executeInsert[A](query: String, f: Reader[OrientElement, A]): A =
+    f(graph.command(new OCommandSQL(query)).execute[OrientElement]())
+
   /**
     * Evaluates each SqlDSL A constructor to A
     */
   protected def evaluateDSL[A](fa: SqlDSL[A]): A = fa match {
-    case UniqueVertex(query, f)   => executeCommandVertex(query, f.run).head
-    case UniqueEdge(query, f)     => executeCommandEdge(query, f.run).head
-    case OptionalVertex(query, f) => executeCommandVertex(query, f.run).headOption
-    case OptionalEdge(query, f)   => executeCommandEdge(query, f.run).headOption
-    case VertexList(query, f)     => executeCommandVertex(query, f.run)
-    case EdgeList(query,f)        => executeCommandEdge(query, f.run)
-    case VertexNel(query, f)      => executeCommandVertex(query, f.run).toNel.get
-    case EdgeNel(query, f)        => executeCommandEdge(query, f.run).toNel.get
-    case As(query, field, f)      => executeCommand(query, f.run)
+    case UniqueVertex(query, f)   => executeCommandVertex(query, f).head
+    case UniqueEdge(query, f)     => executeCommandEdge(query, f).head
+    case OptionalVertex(query, f) => executeCommandVertex(query, f).headOption
+    case OptionalEdge(query, f)   => executeCommandEdge(query, f).headOption
+    case VertexList(query, f)     => executeCommandVertex(query, f)
+    case EdgeList(query,f)        => executeCommandEdge(query, f)
+    case VertexNel(query, f)      => executeCommandVertex(query, f).toNel.get
+    case EdgeNel(query, f)        => executeCommandEdge(query, f).toNel.get
+    case As(query, field, f)      => executeCommand(query, f)
+    case InsertVertex(query, f)   => executeInsert(query, f)
+    case InsertEdge(query, f)     => executeInsert(query, f)
     case UnitDSL(query)           =>
       graph.command(new OCommandSQL(query)).execute()
       ()
