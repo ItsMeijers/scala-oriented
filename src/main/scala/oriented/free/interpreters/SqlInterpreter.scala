@@ -44,8 +44,16 @@ sealed trait SqlInterpreter[G[_]] extends (SqlDSL ~> G) {
       .execute[OrientDynaElementIterable]()
       .head.asInstanceOf[OrientElement])
 
-  private def executeInsert[A](query: String, f: Reader[OrientElement, A]): A =
-    f(graph.command(new OCommandSQL(query)).execute[OrientElement]())
+  private def executeInsertVertex[A](query: String, f: Reader[OrientElement, A]): Vertex[A] = {
+    val orientVertex = graph.command(new OCommandSQL(query)).execute[OrientVertex]()
+    Vertex(f(orientVertex), orientVertex)
+  }
+
+  private def executeInsertEdge[A](query: String, f: Reader[OrientElement, A]): Edge[A] = {
+    val orientEdge = graph.command(new OCommandSQL(query)).execute[OrientEdge]()
+    Edge(f(orientEdge), orientEdge)
+  }
+
 
   /**
     * Evaluates each SqlDSL A constructor to A
@@ -59,9 +67,9 @@ sealed trait SqlInterpreter[G[_]] extends (SqlDSL ~> G) {
     case EdgeList(query,f)        => executeCommandEdge(query, f)
     case VertexNel(query, f)      => executeCommandVertex(query, f).toNel.get
     case EdgeNel(query, f)        => executeCommandEdge(query, f).toNel.get
+    case InsertVertex(query, f)   => executeInsertVertex(query, f)
+    case InsertEdge(query, f)     => executeInsertEdge(query, f)
     case As(query, field, f)      => executeCommand(query, f)
-    case InsertVertex(query, f)   => executeInsert(query, f)
-    case InsertEdge(query, f)     => executeInsert(query, f)
     case UnitDSL(query)           =>
       graph.command(new OCommandSQL(query)).execute()
       ()
