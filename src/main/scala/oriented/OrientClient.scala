@@ -109,7 +109,7 @@ case class PLocalClient(uri: String, db: String, user: String, password: String,
 
   val serverAdmin: OServerAdmin = new OServerAdmin(uri).connect(user, password)
 
-  if(!serverAdmin.existsDatabase()) serverAdmin.createDatabase(db, "document", "plocal")
+  if(!serverAdmin.existsDatabase(db)) serverAdmin.createDatabase(db, "document", "plocal")
 
 }
 
