@@ -53,6 +53,8 @@ case class ReadBigDecimal(fieldName: String) extends ReadDSL[BigDecimal]
 
 case class ReadBigDecimalOpt(fieldName: String) extends ReadDSL[Option[BigDecimal]]
 
+case class ReadEmbedded[T](clazz: Class[T], fieldName: String) extends ReadDSL[T]
+
 class Reads[F[_]](implicit inject: Inject[ReadDSL, F]) {
 
   def read[R](r: R): Free[F, R] =
@@ -114,6 +116,9 @@ class Reads[F[_]](implicit inject: Inject[ReadDSL, F]) {
 
   def readBigDecimalOpt(fieldName: String): Free[F, Option[BigDecimal]] =
     Free.inject[ReadDSL, F](ReadBigDecimalOpt(fieldName))
+
+  def readEmbedded[T](clazz: Class[T], fieldName: String): Free[F, T] =
+    Free.inject[ReadDSL, F](ReadEmbedded(clazz, fieldName))
 }
 
 object Reads {
