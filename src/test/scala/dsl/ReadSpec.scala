@@ -1,5 +1,6 @@
 package dsl
 
+import models.{Container, Container2, Embedded}
 import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
 import oriented.{InMemoryClient, OrientFormat}
 import oriented.syntax._
@@ -32,53 +33,6 @@ class ReadSpec extends FlatSpec with Matchers with BeforeAndAfter {
   }
 
 
-  case class EmbeddedRecord(id: Long, name: String)
-
-  case class ContainerRecord(id: Long, name: String, description: String, embeddedRecord: EmbeddedRecord)
-
-  implicit val embeddedFormat: OrientFormat[EmbeddedRecord] = new OrientFormat[EmbeddedRecord] {
-
-    override def name: String = "EmbeddedRecord"
-
-    override def properties(model: EmbeddedRecord): Map[String, Any] = {
-      println("EmbeddedRecord :: properties")
-      Map("mid" -> model.id, "name" -> model.name)
-    }
-
-    override def read: OrientRead[EmbeddedRecord] =
-      for {
-        id <- readLong("mid")
-        name <- readString("name")
-      } yield EmbeddedRecord(id, name)
-  }
-
-  implicit val containerFormat: OrientFormat[ContainerRecord] = new OrientFormat[ContainerRecord] {
-
-    override def name: String = "ContainerRecord"
-
-    override def properties(model: ContainerRecord): Map[String, Any] = {
-      println("ContainerRecord :: properties")
-      Map(
-        "mid" -> model.id,
-        "name" -> model.name,
-        "description" -> model.description,
-        "inside" -> Map(
-          "mid" -> model.embeddedRecord.id,
-          "name" -> model.embeddedRecord.name
-        )
-      )
-    }
-
-    override def read: OrientRead[ContainerRecord] =
-      for {
-        id <- readLong("mid")
-        name <- readString("name")
-        description <- readString("description")
-        embedded <- readEmbedded(classOf[EmbeddedRecord], "inside")
-      } yield ContainerRecord(id, name, description, embedded)
-  }
-
-
   implicit val orientClient = InMemoryClient("test")
 
   "Read constructor" should "save edge with no fields" in {
@@ -92,8 +46,14 @@ class ReadSpec extends FlatSpec with Matchers with BeforeAndAfter {
     bd.runGraphUnsafe(enableTransactions = false).element should ===(model)
   }
 
-  "Read embedded" should "be able to read embedded records from an OrientElement" in {
-    val model = ContainerRecord(10, "container", "this is a container with a inner record", EmbeddedRecord(123, "hey I'm inside"))
+  "Read embedded" should "be able to read embedded record from an OrientElement" in {
+    val model = Container(10, "container", "this is a container with a inner record", Embedded(123, "hey I'm inside"))
+    val vertex = orientClient.addVertex(model)
+    vertex.runGraphUnsafe(enableTransactions = false).element should ===(model)
+  }
+
+  "Read embedded" should "be able to read multiple embedded records from an OrientElement" in {
+    val model = Container2(10, "container", List(Embedded(123, "hey I'm inside"), Embedded(321, "hey I'm also inside"), Embedded(33, "hey me too")))
     val vertex = orientClient.addVertex(model)
     vertex.runGraphUnsafe(enableTransactions = false).element should ===(model)
   }

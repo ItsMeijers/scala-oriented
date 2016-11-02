@@ -36,6 +36,7 @@ object ReadInterpreter extends (ReadDSL ~> Reader[OrientElement, ?]) {
       case ReadBigDecimal(fieldName)  => o.getProperty[BigDecimal](fieldName)
       case ReadBigDecimalOpt(fieldName)   => Try(o.getProperty[BigDecimal](fieldName)).toOption
       case ReadEmbedded(c, fieldName)  =>   o.getProperty(fieldName)
+      case ReadEmbeddedOpt(c, fieldName)  =>   Try(o.getProperty(fieldName)).toOption
       case ReadBinary(fieldName)      => ??? //o.getProperty[](fieldName)
     })
 }
