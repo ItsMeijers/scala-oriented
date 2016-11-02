@@ -72,6 +72,10 @@ trait OrientFormat[A] {
 
   def readBigDecimalOpt(fieldName: String): OrientRead[Option[BigDecimal]] = element.readBigDecimalOpt(fieldName)
 
+  def readEmbedded[T](clazz: Class[T], fieldName: String): OrientRead[T] = element.readEmbedded(clazz, fieldName)
+
+  def readEmbeddedOpt[T](clazz: Class[T], fieldName: String): OrientRead[Option[T]] = element.readEmbeddedOpt(clazz, fieldName)
+
   // for {
   // id <- read[Int]
   // name <- read[String]
