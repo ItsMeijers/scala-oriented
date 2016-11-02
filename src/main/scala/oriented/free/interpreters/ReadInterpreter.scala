@@ -33,6 +33,8 @@ object ReadInterpreter extends (ReadDSL ~> Reader[OrientElement, ?]) {
       case ReadDatetimeOpt(fieldName) => Try(o.getProperty[Date](fieldName)).toOption
       case ReadString(fieldName)      => o.getProperty[String](fieldName)
       case ReadStringOpt(fieldName)   => Try(o.getProperty[String](fieldName)).toOption
+      case ReadBigDecimal(fieldName)  => o.getProperty[BigDecimal](fieldName)
+      case ReadBigDecimalOpt(fieldName)  => Try(o.getProperty[BigDecimal](fieldName)).toOption
       case ReadBinary(fieldName)      => ??? //o.getProperty[](fieldName)
     })
 }

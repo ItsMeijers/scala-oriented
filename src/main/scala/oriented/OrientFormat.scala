@@ -68,6 +68,10 @@ trait OrientFormat[A] {
 
   def readBinary(fieldName: String): OrientRead[List[Byte]] = element.readBinary(fieldName)
 
+  def readBigDecimal(fieldName: String): OrientRead[BigDecimal] = element.readBigDecimal(fieldName)
+
+  def readBigDecimalOpt(fieldName: String): OrientRead[Option[BigDecimal]] = element.readBigDecimalOpt(fieldName)
+
   // for {
   // id <- read[Int]
   // name <- read[String]
