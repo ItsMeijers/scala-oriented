@@ -27,11 +27,10 @@ trait ClientInterpreter[G[_]] extends (ClientDSL ~> G) {
 
     orientFormat.properties(vertexModel).foreach { case (key, value) =>
       val prop = value match {
-        case Some(v) => v
-        case None => null
+        case opt: Option[Any] => opt.getOrElse(null)
         case _ => value
       }
-      vertex.setProperty(key, prop  )
+      vertex.setProperty(key, prop)
     }
 
     Vertex(vertexModel, vertex)

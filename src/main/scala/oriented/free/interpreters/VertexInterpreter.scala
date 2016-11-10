@@ -77,11 +77,10 @@ sealed trait VertexInterpreter[M[_]] extends (VertexDSL ~> M) {
     case UpdateVertex(newModel, orientVertex, orientFormat) =>
       orientFormat.properties(newModel).foreach { case (key, value) =>
         val prop = value match {
-          case Some(v) => v
-          case None => null
+          case opt: Option[Any] => opt.getOrElse(null)
           case _ => value
         }
-        orientVertex.setProperty(key, prop  )
+        orientVertex.setProperty(key, prop)
       }
       Vertex(newModel, orientVertex)
   }
