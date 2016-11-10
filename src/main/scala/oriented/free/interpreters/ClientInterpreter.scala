@@ -26,7 +26,12 @@ trait ClientInterpreter[G[_]] extends (ClientDSL ~> G) {
     val vertex: OrientVertex = graph.addVertex(s"class:${orientFormat.name}", new util.ArrayList[Any]())
 
     orientFormat.properties(vertexModel).foreach { case (key, value) =>
-      vertex.setProperty(key, value)
+      val prop = value match {
+        case Some(v) => v
+        case None => null
+        case _ => value
+      }
+      vertex.setProperty(key, prop  )
     }
 
     Vertex(vertexModel, vertex)
