@@ -1,10 +1,11 @@
 package oriented
 
 import java.util.Date
+
 import cats.data.Reader
 import com.tinkerpop.blueprints.impls.orient.OrientElement
 import oriented.free.dsl._
-import oriented.free.interpreters.ReadInterpreter
+import oriented.free.interpreters.{ReadInterpreter, ReadMapInterpreter}
 import oriented.syntax.OrientRead
 
 /**
@@ -13,6 +14,8 @@ import oriented.syntax.OrientRead
 trait OrientFormat[A] {
 
   lazy val reader: Reader[OrientElement, A] = read.foldMapUnsafe(ReadInterpreter)
+
+  lazy val readerMap: Reader[Map[String, Any], A] = read.foldMapUnsafe(ReadMapInterpreter)
 
   /**
     * Formats an OrientElement to the model of type A
@@ -33,6 +36,8 @@ trait OrientFormat[A] {
   private val element: Reads[ReadDSL] = Reads.reads[ReadDSL]
 
   def read[R](r: R): OrientRead[R] = element.read(r)
+
+  def read[T](fieldName: String)(implicit orientFormat: OrientFormat[T]): OrientRead[T] = element.readEmbedded(fieldName, orientFormat)
 
   def readBoolean(fieldName: String): OrientRead[Boolean] = element.readBoolean(fieldName)
 

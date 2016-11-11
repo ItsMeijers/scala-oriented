@@ -3,6 +3,7 @@ package oriented.free.dsl
 import java.util.Date
 
 import cats.free.{Free, Inject}
+import oriented.OrientFormat
 
 /**
   * DSL for reading OrientElements to a specific A.
@@ -14,6 +15,8 @@ sealed trait ReadDSL[A]
   * Usage: case classes with no fields or objects.
   */
 case class Read[A](a: A) extends ReadDSL[A]
+
+case class ReadEmbedded[T](fieldName: String, orientFormat: OrientFormat[T]) extends ReadDSL[T]
 
 case class ReadBoolean(fieldName: String) extends ReadDSL[Boolean]
 
@@ -57,6 +60,9 @@ class Reads[F[_]](implicit inject: Inject[ReadDSL, F]) {
 
   def read[R](r: R): Free[F, R] =
     Free.inject[ReadDSL, F](Read(r))
+
+  def readEmbedded[T](fieldName: String, orientFormat: OrientFormat[T]): Free[F, T] =
+    Free.inject[ReadDSL, F](ReadEmbedded(fieldName, orientFormat))
 
   def readBoolean(fieldName: String): Free[F, Boolean] =
     Free.inject[ReadDSL, F](ReadBoolean(fieldName))

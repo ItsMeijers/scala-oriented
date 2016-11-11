@@ -1,5 +1,7 @@
 package dsl
 
+import java.util.Date
+
 import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
 import oriented.{InMemoryClient, OrientFormat}
 import oriented.syntax._
@@ -42,6 +44,96 @@ class ReadSpec extends FlatSpec with Matchers with BeforeAndAfter {
     val model = BigDecTest(BigDecimal(1000000))
     val bd = orientClient.addVertex(model)
     bd.runGraphUnsafe(enableTransactions = false).element should === (model)
+  }
+
+  case class Meta(date: Date, user: String)
+
+  implicit val orientFormatMeta: OrientFormat[Meta] = new OrientFormat[Meta] {
+    override def read: OrientRead[Meta] = for {
+      date <- readDatetime("date")
+      user <- readString("user")
+    } yield Meta(date, user)
+
+    override def name: String = "Meta"
+
+    override def properties(model: Meta): Map[String, Any] = Map("date" -> model.date, "user" -> model.user)
+    // for {
+    //   date <- writeDatetime("date", _.date)
+    //   user <- writeString("user", _.user)
+    // } yield List(date, user)
+  }
+
+  case class Blog(tid: Long, content: String, meta: Meta)
+
+  implicit val orientFormatTweet: OrientFormat[Blog] = new OrientFormat[Blog] {
+
+    override def read: OrientRead[Blog] = for {
+      id <- readLong("tid")
+      content <- readString("content")
+      meta <- read[Meta]("meta")
+    } yield Blog(id, content, meta)
+
+    override def name: String = "Blog"
+
+    /**
+      * **** this is ugly
+      */
+    override def properties(model: Blog): Map[String, Any] =
+      Map("tid" -> model.tid,
+          "content" -> model.content,
+          "meta" -> metaProperties(model.meta))
+    // def write: List[OrientWrite] =
+    // for {
+    //   tid     <- writeLong("tid", _.tid)
+    //   content <- writeString("content", _.content)
+    //   meta    <- write("meta", _.meta)(implicit orientFormat: OrientFormat[Meta])
+    // } yield OrientWrite(tid, content, meta)
+
+    private def metaProperties(model: Meta): Map[String, Any] = Map("date" -> model.date, "user" -> model.user)
+  }
+
+  "Read Embdedded" should "be able to read an embedded object" in {
+    val blogVertex = orientClient
+      .addVertex(Blog(1, "Some content", Meta(new Date(), "Thomas")))
+      .runGraphUnsafe(enableTransactions = false)
+
+    val blogVertexFromQuery = sql"SELECT FROM Blog WHERE tid = '1'"
+      .vertex[Blog]
+      .unique
+      .runGraphUnsafe(enableTransactions = false)
+
+    blogVertex.element should equal(blogVertexFromQuery.element)
+  }
+
+  case class BlogEmbed(tid: Long, blog: Blog)
+
+  implicit val orientFormatBlogEmbeded: OrientFormat[BlogEmbed] = new OrientFormat[BlogEmbed] {
+    def read: OrientRead[BlogEmbed] = for {
+      tid <- readLong("tid")
+      blog <- read[Blog]("blog")
+    } yield BlogEmbed(tid, blog)
+
+    def name: String = "BlogEmbed"
+
+    def properties(model: BlogEmbed): Map[String, Any] =
+      Map("tid" -> model.tid, "blog" ->
+        Map("tid" -> model.blog.tid,
+            "content" -> model.blog.content,
+            "meta" -> Map("date" -> model.blog.meta.date,
+                          "user" -> model.blog.meta.user)))
+  }
+
+  "Read embedded" should "be able to read an embedded object in an embedded object" in {
+    val embededBlogVertex = orientClient
+      .addVertex(BlogEmbed(1, Blog(2, "Bla bla", Meta(new Date(), "Thomasso"))))
+      .runGraphUnsafe(enableTransactions = false)
+
+    val embeddedBlogQuery = sql"SELECT FROM BlogEmbed WHERE tid = '1'"
+      .vertex[BlogEmbed]
+      .unique
+      .runGraphUnsafe(enableTransactions = false)
+
+    embededBlogVertex.element should equal(embeddedBlogQuery.element)
   }
 
 }

@@ -17,6 +17,7 @@ object ReadInterpreter extends (ReadDSL ~> Reader[OrientElement, ?]) {
   override def apply[A](fa: ReadDSL[A]): Reader[OrientElement, A] = Reader((o: OrientElement) =>
     fa match {
       case Read(a)                    => a
+      case ReadEmbedded(fieldName, of) => of.readerMap(o.getProperty[Map[String, Any]](fieldName))
       case ReadBoolean(fieldName)     => o.getProperty[Boolean](fieldName)
       case ReadBooleanOpt(fieldName)  => Try(o.getProperty[Boolean](fieldName)).toOption
       case ReadInt(fieldName)         => o.getProperty[Int](fieldName)
@@ -38,3 +39,34 @@ object ReadInterpreter extends (ReadDSL ~> Reader[OrientElement, ?]) {
       case ReadBinary(fieldName)      => ??? //o.getProperty[](fieldName)
     })
 }
+
+/**
+  * TODO
+  */
+object ReadMapInterpreter extends (ReadDSL ~> Reader[Map[String, Any], ?]) {
+  override def apply[A](fa: ReadDSL[A]): Reader[Map[String, Any], A] = Reader(map => fa match {
+    case Read(a) => throw new Exception("")
+    case ReadEmbedded(fieldName, orientFormat) => orientFormat.readerMap(map(fieldName).asInstanceOf[Map[String, Any]])
+    case ReadBoolean(fieldName)                => map(fieldName).asInstanceOf[Boolean]
+    case ReadBooleanOpt(fieldName)             => map.get(fieldName).map(_.asInstanceOf[Boolean])
+    case ReadInt(fieldName)                    => map(fieldName).asInstanceOf[Int]
+    case ReadIntOpt(fieldName)                 => map.get(fieldName).map(_.asInstanceOf[Int])
+    case ReadShort(fieldName)                  => map(fieldName).asInstanceOf[Short]
+    case ReadShortOpt(fieldName)               => map.get(fieldName).map(_.asInstanceOf[Short])
+    case ReadLong(fieldName)                   => map(fieldName).asInstanceOf[Long]
+    case ReadLongOpt(fieldName)                => map.get(fieldName).map(_.asInstanceOf[Long])
+    case ReadFloat(fieldName)                  => map(fieldName).asInstanceOf[Float]
+    case ReadFloatOpt(fieldName)               => map.get(fieldName).map(_.asInstanceOf[Float])
+    case ReadDouble(fieldName)                 => map(fieldName).asInstanceOf[Double]
+    case ReadDoubleOpt(fieldName)              => map.get(fieldName).map(_.asInstanceOf[Double])
+    case ReadDatetime(fieldName)               => map(fieldName).asInstanceOf[Date]
+    case ReadDatetimeOpt(fieldName)            => map.get(fieldName).map(_.asInstanceOf[Date])
+    case ReadString(fieldName)                 => map(fieldName).asInstanceOf[String]
+    case ReadStringOpt(fieldName)              => map.get(fieldName).map(_.asInstanceOf[String])
+    case ReadBinary(fieldName)                 => ???
+    case ReadBigDecimal(fieldName)             => map(fieldName).asInstanceOf[BigDecimal]
+    case ReadBigDecimalOpt(fieldName)          => map.get(fieldName).map(_.asInstanceOf[BigDecimal])
+  })
+}
+
+case class ReaderInterpreterG[A, B](a: A, get: A => B)
