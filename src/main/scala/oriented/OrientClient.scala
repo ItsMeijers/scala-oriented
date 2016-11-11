@@ -107,9 +107,7 @@ case class InMemoryClient(db: String, user: String = "root", password: String = 
   */
 case class PLocalClient(uri: String, db: String, user: String, password: String, pool: Option[(Int, Int)] = None) extends OrientClient {
 
-  val serverAdmin: OServerAdmin = new OServerAdmin(uri).connect(user, password)
-
-  if(!serverAdmin.existsDatabase(db)) serverAdmin.createDatabase(db, "document", "plocal")
+  val serverAdmin: OServerAdmin = new OServerAdmin(s"$uri/$db").connect(user, password)
 
 }
 
