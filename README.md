@@ -1,4 +1,4 @@
-# scala-oriented
+# scala-oriented [![Build Status](https://travis-ci.org/ThomasMeijers/scala-oriented.svg?branch=master)](https://travis-ci.org/ThomasMeijers/scala-oriented)
 
 **_scala-oriented_** is a Scala wrapper for the OrientDB Java API, _oriented_ on functional and typeful programming. The library uses the extended SQL queries and commands from the Java API,  encapsulating side-effect and queries resulting in meaningful types.  
 
