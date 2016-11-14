@@ -39,6 +39,10 @@ trait OrientFormat[A] {
 
   def read[T](fieldName: String)(implicit orientFormat: OrientFormat[T]): OrientRead[T] = element.readEmbedded(fieldName, orientFormat)
 
+  def readList[T](fieldName: String)(implicit orientFormat: OrientFormat[T]): OrientRead[List[T]] = element.readList(fieldName, orientFormat)
+
+  def readListOpt[T](fieldName: String)(implicit orientFormat: OrientFormat[T]): OrientRead[Option[List[T]]] = element.readListOpt(fieldName, orientFormat)
+
   def readBoolean(fieldName: String): OrientRead[Boolean] = element.readBoolean(fieldName)
 
   def readBooleanOpt(fieldName: String): OrientRead[Option[Boolean]] = element.readBooleanOpt(fieldName)

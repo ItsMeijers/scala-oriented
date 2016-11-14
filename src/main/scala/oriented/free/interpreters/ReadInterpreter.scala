@@ -18,6 +18,8 @@ object ReadInterpreter extends (ReadDSL ~> Reader[OrientElement, ?]) {
     fa match {
       case Read(a)                    => a
       case ReadEmbedded(fieldName, of) => of.readerMap(o.getProperty[Map[String, Any]](fieldName))
+      case ReadList(fieldName, of)    => o.getProperty[List[Map[String, Any]]](fieldName).map(of.readerMap.run)
+      case ReadListOpt(fieldName, of) => Try(o.getProperty[List[Map[String, Any]]](fieldName).map(of.readerMap.run)).toOption
       case ReadBoolean(fieldName)     => o.getProperty[Boolean](fieldName)
       case ReadBooleanOpt(fieldName)  => Try(o.getProperty[Boolean](fieldName)).toOption
       case ReadInt(fieldName)         => o.getProperty[Int](fieldName)
@@ -47,6 +49,8 @@ object ReadMapInterpreter extends (ReadDSL ~> Reader[Map[String, Any], ?]) {
   override def apply[A](fa: ReadDSL[A]): Reader[Map[String, Any], A] = Reader(map => fa match {
     case Read(a) => throw new Exception("")
     case ReadEmbedded(fieldName, orientFormat) => orientFormat.readerMap(map(fieldName).asInstanceOf[Map[String, Any]])
+    case ReadList(fieldName, orientFormat)     => map(fieldName).asInstanceOf[List[Map[String, Any]]].map(orientFormat.readerMap.run)
+    case ReadListOpt(fieldName, orientFormat)  => map.get(fieldName).map(_.asInstanceOf[List[Map[String, Any]]].map(orientFormat.readerMap.run))
     case ReadBoolean(fieldName)                => map(fieldName).asInstanceOf[Boolean]
     case ReadBooleanOpt(fieldName)             => map.get(fieldName).map(_.asInstanceOf[Boolean])
     case ReadInt(fieldName)                    => map(fieldName).asInstanceOf[Int]
