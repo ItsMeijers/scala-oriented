@@ -105,13 +105,14 @@ class ReadSpec extends FlatSpec with Matchers with BeforeAndAfter {
     blogVertex.element should equal(blogVertexFromQuery.element)
   }
 
-  case class BlogEmbed(tid: Long, blog: Blog)
+  case class BlogEmbed(tid: Long, blog: Blog, metas: List[Meta])
 
   implicit val orientFormatBlogEmbeded: OrientFormat[BlogEmbed] = new OrientFormat[BlogEmbed] {
     def read: OrientRead[BlogEmbed] = for {
       tid <- readLong("tid")
       blog <- read[Blog]("blog")
-    } yield BlogEmbed(tid, blog)
+      metas <- readList[Meta]("metas")
+    } yield BlogEmbed(tid, blog, metas)
 
     def name: String = "BlogEmbed"
 
@@ -120,12 +121,14 @@ class ReadSpec extends FlatSpec with Matchers with BeforeAndAfter {
         Map("tid" -> model.blog.tid,
             "content" -> model.blog.content,
             "meta" -> Map("date" -> model.blog.meta.date,
-                          "user" -> model.blog.meta.user)))
+                          "user" -> model.blog.meta.user)),
+      "metas" -> model.metas.map(m => Map("date" -> m.date, "user" -> m.user)))
   }
 
   "Read embedded" should "be able to read an embedded object in an embedded object" in {
+    val metaList = List(Meta(new Date(), "Foo"), Meta(new Date(), "Bar"), Meta(new Date(), "Baz"))
     val embededBlogVertex = orientClient
-      .addVertex(BlogEmbed(1, Blog(2, "Bla bla", Meta(new Date(), "Thomasso"))))
+      .addVertex(BlogEmbed(1, Blog(2, "Bla bla", Meta(new Date(), "Thomasso")), metaList))
       .runGraphUnsafe(enableTransactions = false)
 
     val embeddedBlogQuery = sql"SELECT FROM BlogEmbed WHERE tid = '1'"
@@ -134,6 +137,7 @@ class ReadSpec extends FlatSpec with Matchers with BeforeAndAfter {
       .runGraphUnsafe(enableTransactions = false)
 
     embededBlogVertex.element should equal(embeddedBlogQuery.element)
+    embededBlogVertex.element.metas.size should equal(embeddedBlogQuery.element.metas.size)
   }
 
 }

@@ -18,6 +18,10 @@ case class Read[A](a: A) extends ReadDSL[A]
 
 case class ReadEmbedded[T](fieldName: String, orientFormat: OrientFormat[T]) extends ReadDSL[T]
 
+case class ReadList[T](fieldName: String, orientFormat: OrientFormat[T]) extends ReadDSL[List[T]]
+
+case class ReadListOpt[T](fieldName: String, orientFormat: OrientFormat[T]) extends ReadDSL[Option[List[T]]]
+
 case class ReadBoolean(fieldName: String) extends ReadDSL[Boolean]
 
 case class ReadBooleanOpt(fieldName: String) extends ReadDSL[Option[Boolean]]
@@ -63,6 +67,12 @@ class Reads[F[_]](implicit inject: Inject[ReadDSL, F]) {
 
   def readEmbedded[T](fieldName: String, orientFormat: OrientFormat[T]): Free[F, T] =
     Free.inject[ReadDSL, F](ReadEmbedded(fieldName, orientFormat))
+
+  def readList[T](fieldName: String, orientFormat: OrientFormat[T]): Free[F, List[T]] =
+    Free.inject[ReadDSL, F](ReadList(fieldName, orientFormat))
+
+  def readListOpt[T](fieldName: String, orientFormat: OrientFormat[T]): Free[F, Option[List[T]]] =
+    Free.inject[ReadDSL, F](ReadListOpt(fieldName, orientFormat))
 
   def readBoolean(fieldName: String): Free[F, Boolean] =
     Free.inject[ReadDSL, F](ReadBoolean(fieldName))
