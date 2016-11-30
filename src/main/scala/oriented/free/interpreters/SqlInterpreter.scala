@@ -29,14 +29,14 @@ sealed trait SqlInterpreter[G[_]] extends (SqlDSL ~> G) {
   private def executeCommandVertex[A](query: String, f: OrientFormat[A]): List[Vertex[A]] =
     executeIterable[Vertex[A]](query) { r =>
       val orientVertex = r.asInstanceOf[OrientVertex]
-      val value = MapInterpreter.run(f.decode, orientVertex.getProperties.toMap).get
+      val value = MapInterpreter.run(f.decode, orientVertex.getProperties.toMap)
       Vertex(value, orientVertex)
     }
 
   private def executeCommandEdge[A](query: String, f: OrientFormat[A]): List[Edge[A]] =
     executeIterable[Edge[A]](query) { r =>
       val orientEdge = r.asInstanceOf[OrientEdge]
-      val value = MapInterpreter.run(f.decode, orientEdge.getProperties.toMap).get
+      val value = MapInterpreter.run(f.decode, orientEdge.getProperties.toMap)
       Edge(value, orientEdge)
     }
 
@@ -47,19 +47,19 @@ sealed trait SqlInterpreter[G[_]] extends (SqlDSL ~> G) {
       .head
       .asInstanceOf[OrientElement]
 
-    MapInterpreter.run(f.decode, element.getProperties.toMap).get
+    MapInterpreter.run(f.decode, element.getProperties.toMap)
   }
 
 
   private def executeInsertVertex[A](query: String, f: OrientFormat[ A]): Vertex[A] = {
     val orientVertex = graph.command(new OCommandSQL(query)).execute[OrientVertex]()
-    val value = MapInterpreter.run(f.decode, orientVertex.getProperties.toMap).get
+    val value = MapInterpreter.run(f.decode, orientVertex.getProperties.toMap)
     Vertex(value, orientVertex)
   }
 
   private def executeInsertEdge[A](query: String, f: OrientFormat[ A]): Edge[A] = {
     val orientEdge = graph.command(new OCommandSQL(query)).execute[OrientEdge]()
-    val value = MapInterpreter.run(f.decode, orientEdge.getProperties.toMap).get
+    val value = MapInterpreter.run(f.decode, orientEdge.getProperties.toMap)
 
     Edge(value, orientEdge)
   }

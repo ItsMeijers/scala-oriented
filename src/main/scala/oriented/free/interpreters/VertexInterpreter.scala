@@ -52,7 +52,7 @@ sealed trait VertexInterpreter[M[_]] extends (VertexDSL ~> M) {
         .getEdges(destination.orientElement, getDirection(direction), orientFormat.name)
         .asScala.map { te =>
           val orientEdge = te.asInstanceOf[OrientEdge]
-          val value = MapInterpreter.run(orientFormat.decode, orientEdge.getProperties.asScala.toMap).get
+          val value = MapInterpreter.run(orientFormat.decode, orientEdge.getProperties.asScala.toMap)
 
           Edge(value, orientEdge)
         }.toList
@@ -64,7 +64,7 @@ sealed trait VertexInterpreter[M[_]] extends (VertexDSL ~> M) {
         .asScala
         .map { te =>
           val orientEdge = te.asInstanceOf[OrientEdge]
-          val value = MapInterpreter.run(orientFormat.decode, orientEdge.getProperties.asScala.toMap).get
+          val value = MapInterpreter.run(orientFormat.decode, orientEdge.getProperties.asScala.toMap)
 
           Edge(value, orientEdge)
         }.toList
@@ -76,7 +76,7 @@ sealed trait VertexInterpreter[M[_]] extends (VertexDSL ~> M) {
         .map(_.asInstanceOf[OrientVertex])
         .filter(_.getLabel == orientFormatVertex.name)
         .map { orientVertex =>
-          val value = MapInterpreter.run(orientFormatVertex.decode, orientVertex.getProperties.asScala.toMap).get
+          val value = MapInterpreter.run(orientFormatVertex.decode, orientVertex.getProperties.asScala.toMap)
 
           Vertex(value, orientVertex)
         }.toList

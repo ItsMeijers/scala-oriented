@@ -4,7 +4,7 @@ import java.util.Date
 
 import cats.{Cartesian, Monad, SemigroupK}
 
-trait OrientReadF[F[_]] extends Monad[F] with Cartesian[F] with SemigroupK[F] {
+trait OrientReadF[F[_]] extends Monad[F] with Cartesian[F] {
   def pure[A](value: A): F[A]
 
   def embedded[A](fieldName: String, read: F[A]): F[A]
