@@ -21,7 +21,7 @@ sealed trait EdgeInterpreter[G[_]] extends (EdgeDSL ~> G) {
   def getVertex[A, B](edge: Edge[A], direction: Direction, orientFormat: OrientFormat[B]): Vertex[B] = {
     val vertexElement = edge.orientElement.getVertex(direction)
     //TODO: this might explode
-    val value = MapInterpreter.run(orientFormat.decode, vertexElement.getProperties.asScala.toMap)
+    val value = MapInterpreter.run(orientFormat.decode, vertexElement.getProperties.asScala.toMap).get
 
     Vertex(value, vertexElement)
   }

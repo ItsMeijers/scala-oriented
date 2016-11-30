@@ -5,7 +5,7 @@ import java.util.Date
 import cats.implicits._
 import oriented.free.dsl._
 import shapeless.labelled.{FieldType, field}
-import shapeless.{::, HList, HNil, LabelledGeneric, Lazy, Witness}
+import shapeless.{:+:, ::, CNil, Coproduct, HList, HNil, Inl, Inr, LabelledGeneric, Lazy, Witness}
 
 import scala.reflect.ClassTag
 
@@ -114,6 +114,15 @@ object OrientObjectRead {
       OrientRead.product(sv.value.decode(key.value.name), st.value.decode).map { case (h, t) => field[K](h) :: t}
   }
 
+  implicit val cnil = new OrientObjectRead[CNil] {
+    override def decode: OrientRead[CNil] = sys.error("Should not happen")
+  }
+
+  implicit def ccons[K <: Symbol, V, T <: Coproduct](implicit key: Witness.Aux[K], sv: Lazy[OrientObjectRead[V]], st: OrientObjectRead[T]) = new OrientObjectRead[FieldType[K, V] :+: T] {
+    override def decode: OrientRead[FieldType[K, V] :+: T] =
+      OrientRead.flatMap[String, FieldType[K, V] :+: T](OrientRead.string("_type"), x => if(x == key.value.name) sv.value.decode.map(y => Inl(field[K](y))) else st.decode.map(y => Inr(y)))
+  }
+
   implicit def generic[T, R](implicit gen: LabelledGeneric.Aux[T, R], readRepr: Lazy[OrientObjectRead[R]]) = new OrientObjectRead[T] {
     override def decode: OrientRead[T] = readRepr.value.decode.map(r => gen.from(r))
   }
@@ -131,6 +140,18 @@ object OrientObjectWrite {
                                                  st: Lazy[OrientObjectWrite[T]]) = new OrientObjectWrite[FieldType[K, V] :: T] {
     override def encode(value: FieldType[K, V] :: T): Map[String, Any] = sv.value.encode(key.value.name, value.head) ++ st.value.encode(value.tail)
   }
+
+  implicit val cnil = new OrientObjectWrite[CNil] {
+    override def encode(value: CNil): Map[String, Any] = sys.error("Should not happen")
+  }
+
+  implicit def ccons[K <: Symbol, V, T <: Coproduct](implicit key: Witness.Aux[K], sv: Lazy[OrientObjectWrite[V]], st: OrientObjectWrite[T]) = new OrientObjectWrite[FieldType[K, V] :+: T] {
+    override def encode(value: :+:[FieldType[K, V], T]): Map[String, Any] = value match {
+      case Inl(v) => sv.value.encode(v) ++ Map("_type" -> key.value.name)
+      case Inr(v) => st.encode(v)
+    }
+  }
+
 
   implicit def generic[T, R](implicit gen: LabelledGeneric.Aux[T, R], writeRepr: Lazy[OrientObjectWrite[R]]) = new OrientObjectWrite[T] {
     override def encode(value: T): Map[String, Any] = writeRepr.value.encode(gen.to(value))
