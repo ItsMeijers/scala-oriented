@@ -8,6 +8,7 @@ import oriented.free.dsl.{EdgeDSL, GetInVertex, GetOutVertex, UpdateEdge}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
+import scala.collection.JavaConverters._
 
 /**
   * An EdgeInterpreter forms a natural transformation from EdgeDSL to a higher kinded type G.
@@ -19,7 +20,10 @@ sealed trait EdgeInterpreter[G[_]] extends (EdgeDSL ~> G) {
     */
   def getVertex[A, B](edge: Edge[A], direction: Direction, orientFormat: OrientFormat[B]): Vertex[B] = {
     val vertexElement = edge.orientElement.getVertex(direction)
-    Vertex(orientFormat.reader.run(vertexElement), vertexElement)
+    //TODO: this might explode
+    val value = MapInterpreter.run(orientFormat.decode, vertexElement.getProperties.asScala.toMap)
+
+    Vertex(value, vertexElement)
   }
 
   /**
@@ -29,7 +33,7 @@ sealed trait EdgeInterpreter[G[_]] extends (EdgeDSL ~> G) {
     case GetInVertex(edge, orientFormat)  => getVertex(edge, Direction.IN, orientFormat)
     case GetOutVertex(edge, orientFormat) => getVertex(edge, Direction.OUT, orientFormat)
     case UpdateEdge(newModel, orientEdge, orientFormat) =>
-      orientFormat.properties(newModel).foreach { case (key, value) =>
+      orientFormat.encode(newModel).foreach { case (key, value) =>
         orientEdge.setProperty(key, value)
       }
       Edge(newModel, orientEdge)

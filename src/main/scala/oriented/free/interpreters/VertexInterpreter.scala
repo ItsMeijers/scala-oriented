@@ -30,7 +30,7 @@ sealed trait VertexInterpreter[M[_]] extends (VertexDSL ~> M) {
     */
   def interpretDSL[A](fa: VertexDSL[A]): A = fa match {
     case AddEdgeToVertex(vertex, edgeModel, inVertex, clusterName, of) =>
-      val elements = mapAsJavaMap(of.properties(edgeModel))
+      val elements = mapAsJavaMap(of.encode(edgeModel))
         .asInstanceOf[java.util.Map[java.lang.String, java.lang.Object]]
 
       val orientEdge = clusterName.map { cn =>
@@ -52,7 +52,9 @@ sealed trait VertexInterpreter[M[_]] extends (VertexDSL ~> M) {
         .getEdges(destination.orientElement, getDirection(direction), orientFormat.name)
         .asScala.map { te =>
           val orientEdge = te.asInstanceOf[OrientEdge]
-          Edge(orientFormat.reader.run(orientEdge), orientEdge)
+          val value = MapInterpreter.run(orientFormat.decode, orientEdge.getProperties.asScala.toMap)
+
+          Edge(value, orientEdge)
         }.toList
 
     case GetEdges(vertex, direction, orientFormat) =>
@@ -62,7 +64,9 @@ sealed trait VertexInterpreter[M[_]] extends (VertexDSL ~> M) {
         .asScala
         .map { te =>
           val orientEdge = te.asInstanceOf[OrientEdge]
-          Edge(orientFormat.reader.run(orientEdge), orientEdge)
+          val value = MapInterpreter.run(orientFormat.decode, orientEdge.getProperties.asScala.toMap)
+
+          Edge(value, orientEdge)
         }.toList
 
     case GetType(vertex) => VertexType(vertex.orientElement.getType)
@@ -72,10 +76,12 @@ sealed trait VertexInterpreter[M[_]] extends (VertexDSL ~> M) {
         .map(_.asInstanceOf[OrientVertex])
         .filter(_.getLabel == orientFormatVertex.name)
         .map { orientVertex =>
-          Vertex(orientFormatVertex.reader.run(orientVertex), orientVertex)
+          val value = MapInterpreter.run(orientFormatVertex.decode, orientVertex.getProperties.asScala.toMap)
+
+          Vertex(value, orientVertex)
         }.toList
     case UpdateVertex(newModel, orientVertex, orientFormat) =>
-      orientFormat.properties(newModel).foreach { case (key, value) =>
+      orientFormat.encode(newModel).foreach { case (key, value) =>
         orientVertex.setProperty(key, value)
       }
       Vertex(newModel, orientVertex)
