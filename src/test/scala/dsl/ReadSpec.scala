@@ -2,56 +2,38 @@ package dsl
 
 import java.util.Date
 
-import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
-import oriented.{InMemoryClient, OrientFormat}
+import org.scalacheck.Arbitrary
+import org.scalacheck.Arbitrary._
+import org.scalacheck.Prop._
+import org.scalacheck.Shapeless._
+import org.scalatest._
 import oriented.syntax._
+import oriented.{InMemoryClient, OrientFormat}
 
-/**
-  * Test spec for Read DSL
-  */
-class ReadSpec extends FlatSpec with Matchers with BeforeAndAfter {
+case class Meta(date: Date, user: String)
+case class GenericValue[T](value: T)
 
+class OrientFormatTests extends PropSpec {
   implicit val orientClient = InMemoryClient("test")
 
-  "Read constructor" should "save edge with no fields" in {
-    val edge = orientClient.addVertex(Test)
-    edge.runGraphUnsafe(enableTransactions = false).element should === (Test)
-  }
+  property("int")(roundTrip[Int])
+  property("double")(roundTrip[Double])
+  property("long")(roundTrip[Long])
+  property("bigdecimal")(roundTrip[BigDecimal])
+  property("date")(roundTrip[Date])
+  property("string")(roundTrip[String])
+  property("option")(roundTrip[Option[Int]])
+  property("embedded")(roundTrip[Meta])
+  property("list objects")(roundTrip[List[Meta]])
 
-  "Read big decimal" should "be able to read an decimal from an OrientElement" in {
-    val model = BigDecTest(1000000)
-    val bd = orientClient.addVertex(model)
-    bd.runGraphUnsafe(enableTransactions = false).element should === (model)
-  }
-
-  "Read Embdedded" should "be able to read an embedded object" in {
-
-    val vertex = Blog(1, "Some content", Meta(new Date(), "Thomas"))
-    val blogVertex = orientClient
-      .addVertex(vertex)
-      .runGraphUnsafe(enableTransactions = false)
-
-    val blogVertexFromQuery = sql"SELECT FROM Blog WHERE tid = '1'"
-      .vertex[Blog]
+  def roundTrip[T : Arbitrary](implicit F: OrientFormat[GenericValue[T]]) = forAll { (a: T) =>
+    val value = GenericValue(a)
+    val result = orientClient.addVertex(value).runGraphUnsafe(enableTransactions = false)
+    val payload = sql"SELECT FROM ${result.orientElement.getIdentity}"
+      .vertex[GenericValue[T]]
       .unique
-      .runGraphUnsafe(enableTransactions = false)
+      .runGraphUnsafe(enableTransactions = true)
 
-    vertex should equal(blogVertexFromQuery.element)
+    payload.element == value
   }
-
-  "Read embedded" should "be able to read an embedded object in an embedded object" in {
-    val metaList = List(Meta(new Date(), "Foo"), Meta(new Date(), "Bar"), Meta(new Date(), "Baz"))
-    val embededBlogVertex = orientClient
-      .addVertex(BlogEmbed(1, Blog(2, "Bla bla", Meta(new Date(), "Thomasso")), metaList))
-      .runGraphUnsafe(enableTransactions = false)
-
-    val embeddedBlogQuery = sql"SELECT FROM BlogEmbed WHERE tid = '1'"
-      .vertex[BlogEmbed]
-      .unique
-      .runGraphUnsafe(enableTransactions = false)
-
-    embededBlogVertex.element should equal(embeddedBlogQuery.element)
-    embededBlogVertex.element.metas.size should equal(embeddedBlogQuery.element.metas.size)
-  }
-
 }
