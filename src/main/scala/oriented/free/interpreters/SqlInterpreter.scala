@@ -6,7 +6,7 @@ import cats.{Id, ~>}
 import cats.syntax.list._
 import com.orientechnologies.orient.core.sql.OCommandSQL
 import com.tinkerpop.blueprints.impls.orient._
-import oriented.{Edge, Element, Vertex}
+import oriented.{Edge, Element, OrientFormat, Vertex}
 import oriented.free.dsl._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -26,32 +26,42 @@ sealed trait SqlInterpreter[G[_]] extends (SqlDSL ~> G) {
     .map(toElement)
     .toList
 
-  private def executeCommandVertex[A](query: String, f: Reader[OrientElement, A]): List[Vertex[A]] =
+  private def executeCommandVertex[A](query: String, f: OrientFormat[A]): List[Vertex[A]] =
     executeIterable[Vertex[A]](query) { r =>
       val orientVertex = r.asInstanceOf[OrientVertex]
-      Vertex(f(orientVertex), orientVertex)
+      val value = MapInterpreter.run(f.decode, orientVertex.getProperties.toMap)
+      Vertex(value, orientVertex)
     }
 
-  private def executeCommandEdge[A](query: String, f: Reader[OrientElement,A]): List[Edge[A]] =
+  private def executeCommandEdge[A](query: String, f: OrientFormat[A]): List[Edge[A]] =
     executeIterable[Edge[A]](query) { r =>
       val orientEdge = r.asInstanceOf[OrientEdge]
-      Edge(f(orientEdge), orientEdge)
+      val value = MapInterpreter.run(f.decode, orientEdge.getProperties.toMap)
+      Edge(value, orientEdge)
     }
 
-  private def executeCommand[A](query: String, f: Reader[OrientElement, A]): A =
-    f(graph
+  private def executeCommand[A](query: String, f: OrientFormat[A]): A = {
+    val element = graph
       .command(new OCommandSQL(query))
       .execute[OrientDynaElementIterable]()
-      .head.asInstanceOf[OrientElement])
+      .head
+      .asInstanceOf[OrientElement]
 
-  private def executeInsertVertex[A](query: String, f: Reader[OrientElement, A]): Vertex[A] = {
-    val orientVertex = graph.command(new OCommandSQL(query)).execute[OrientVertex]()
-    Vertex(f(orientVertex), orientVertex)
+    MapInterpreter.run(f.decode, element.getProperties.toMap)
   }
 
-  private def executeInsertEdge[A](query: String, f: Reader[OrientElement, A]): Edge[A] = {
+
+  private def executeInsertVertex[A](query: String, f: OrientFormat[ A]): Vertex[A] = {
+    val orientVertex = graph.command(new OCommandSQL(query)).execute[OrientVertex]()
+    val value = MapInterpreter.run(f.decode, orientVertex.getProperties.toMap)
+    Vertex(value, orientVertex)
+  }
+
+  private def executeInsertEdge[A](query: String, f: OrientFormat[ A]): Edge[A] = {
     val orientEdge = graph.command(new OCommandSQL(query)).execute[OrientEdge]()
-    Edge(f(orientEdge), orientEdge)
+    val value = MapInterpreter.run(f.decode, orientEdge.getProperties.toMap)
+
+    Edge(value, orientEdge)
   }
 
 

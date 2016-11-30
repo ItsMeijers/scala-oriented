@@ -32,8 +32,6 @@ package object syntax {
     def pure[A](a: A): OrientIO[A] = Free.pure[OrientProgram, A](a)
   }
 
-  type OrientRead[A] = Free[ReadDSL, A]
-
   implicit class OrientIOInterpreter[A](orientIO: OrientIO[A]) {
 
     /**

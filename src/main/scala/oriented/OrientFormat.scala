@@ -2,96 +2,160 @@ package oriented
 
 import java.util.Date
 
-import cats.data.Reader
-import com.tinkerpop.blueprints.impls.orient.OrientElement
+import cats.implicits._
 import oriented.free.dsl._
-import oriented.free.interpreters.{ReadInterpreter, ReadMapInterpreter}
-import oriented.syntax.OrientRead
+import shapeless.labelled.{FieldType, field}
+import shapeless.{:+:, ::, CNil, Coproduct, HList, HNil, Inl, Inr, LabelledGeneric, Lazy, Witness}
+
+import scala.reflect.ClassTag
 
 /**
   * OrientFormat typeclass makes it able to transform from and to OrientElements from a specific model A.
   */
-trait OrientFormat[A] {
+trait OrientFormat[A] extends OrientObjectRead[A] with OrientObjectWrite[A] {
+  val name: String
+}
 
-  lazy val reader: Reader[OrientElement, A] = read.foldMapUnsafe(ReadInterpreter)
+object OrientFormat {
+  implicit def apply[A](implicit R: OrientObjectRead[A], W: OrientObjectWrite[A], CT: ClassTag[A]): OrientFormat[A] = new OrientFormat[A] {
+    val name: String = CT.runtimeClass.getSimpleName
+    def decode: OrientRead[A] = R.decode
+    def encode(value: A): Map[String, Any] = W.encode(value)
+  }
+}
 
-  lazy val readerMap: Reader[Map[String, Any], A] = read.foldMapUnsafe(ReadMapInterpreter)
+trait OrientObjectRead[A] {
+  def decode: OrientRead[A]
+}
 
-  /**
-    * Formats an OrientElement to the model of type A
-    */
-  def read: OrientRead[A]
+trait OrientFieldRead[A] {
+  def decode(fieldName: String): OrientRead[A]
+}
 
-  /**
-    * The name of the Model (class name)
-    */
-  def name: String
+trait OrientFieldWrite[A] {
+  def encode(fieldName: String, value: A): Map[String, Any]
+}
 
-  /**
-    * A Map of properties where each name of the property of the class is the String and Any is the value.
-    * TODO: Change to Shapeless implementation
-    */
-  def properties(model: A): Map[String, Any]
+trait OrientObjectWrite[A] {
+  def encode(value: A): Map[String, Any]
+}
 
-  private val element: Reads[ReadDSL] = Reads.reads[ReadDSL]
 
-  def read[R](r: R): OrientRead[R] = element.read(r)
+object OrientFieldWrite {
 
-  def read[T](fieldName: String)(implicit orientFormat: OrientFormat[T]): OrientRead[T] = element.readEmbedded(fieldName, orientFormat)
+  def anyWrite[T] = new OrientFieldWrite[T] {
+    override def encode(fieldName: String, value: T): Map[String, Any] = Map(fieldName -> value)
+  }
 
-  def readList[T](fieldName: String)(implicit orientFormat: OrientFormat[T]): OrientRead[List[T]] = element.readList(fieldName, orientFormat)
+  implicit val int: OrientFieldWrite[Int] = anyWrite[Int]
+  implicit val string: OrientFieldWrite[String] = anyWrite[String]
+  implicit val bigDecimal: OrientFieldWrite[BigDecimal] = anyWrite[BigDecimal]
+  implicit val long: OrientFieldWrite[Long] = anyWrite[Long]
+  implicit val double: OrientFieldWrite[Double] = anyWrite[Double]
+  implicit val short: OrientFieldWrite[Short] = anyWrite[Short]
+  implicit val date: OrientFieldWrite[Date] = anyWrite[Date]
 
-  def readListOpt[T](fieldName: String)(implicit orientFormat: OrientFormat[T]): OrientRead[Option[List[T]]] = element.readListOpt(fieldName, orientFormat)
 
-  def readBoolean(fieldName: String): OrientRead[Boolean] = element.readBoolean(fieldName)
+  implicit def embeddedObject[T](implicit T: OrientObjectWrite[T]): OrientFieldWrite[T] = new OrientFieldWrite[T] {
+    override def encode(fieldName: String, value: T): Map[String, Any] = Map(fieldName -> T.encode(value))
+  }
 
-  def readBooleanOpt(fieldName: String): OrientRead[Option[Boolean]] = element.readBooleanOpt(fieldName)
+  implicit def listObject[T](implicit T: OrientObjectWrite[T]): OrientFieldWrite[List[T]] = new OrientFieldWrite[List[T]] {
+    override def encode(fieldName: String, value: List[T]): Map[String, Any] = Map(fieldName -> value.map(T.encode))
+  }
 
-  def readInt(fieldName: String): OrientRead[Int] = element.readInt(fieldName)
+  implicit def option[T] = new OrientFieldWrite[Option[T]] {
+    override def encode(fieldName: String, value: Option[T]): Map[String, Any] = value.fold[Map[String, Any]](Map())(v => Map(fieldName -> v))
+  }
+}
 
-  def readIntOpt(fieldName: String): OrientRead[Option[Int]] = element.readIntOpt(fieldName)
+object OrientFieldRead {
 
-  def readShort(fieldName: String): OrientRead[Short] = element.readShort(fieldName)
+  import OrientRead._
 
-  def readShortOpt(fieldName: String): OrientRead[Option[Short]] = element.readShortOpt(fieldName)
+  def fieldRead[A](f: String => OrientRead[A]) = new OrientFieldRead[A] {
+    override def decode(fieldName: String): OrientRead[A] = f(fieldName)
+  }
 
-  def readLong(fieldName: String): OrientRead[Long] = element.readLong(fieldName)
+  implicit val intField: OrientFieldRead[Int] = fieldRead(int)
+  implicit val stringField: OrientFieldRead[String] = fieldRead(string)
+  implicit val bigDecimalField: OrientFieldRead[BigDecimal] = fieldRead(bigDecimal)
+  implicit val longField: OrientFieldRead[Long] = fieldRead(long)
+  implicit val doubleField: OrientFieldRead[Double] = fieldRead(double)
+  implicit val shortField: OrientFieldRead[Short] = fieldRead(short)
+  implicit val dateField: OrientFieldRead[Date] = fieldRead(date)
 
-  def readLongOpt(fieldName: String): OrientRead[Option[Long]] = element.readLongOpt(fieldName)
+  implicit def embeddedObject[T](implicit T: OrientObjectRead[T]): OrientFieldRead[T] = new OrientFieldRead[T] {
+    override def decode(fieldName: String): OrientRead[T] = embedded(fieldName, T.decode)
+  }
 
-  def readFloat(fieldName: String): OrientRead[Float] = element.readFloat(fieldName)
+  implicit def listField[T](implicit T: OrientObjectRead[T]): OrientFieldRead[List[T]] = new OrientFieldRead[List[T]] {
+    override def decode(fieldName: String): OrientRead[List[T]] = list(fieldName, T.decode)
+  }
 
-  def readFloatOpt(fieldName: String): OrientRead[Option[Float]] = element.readFloatOpt(fieldName)
+  implicit def optionObject[T](implicit T: OrientObjectRead[T]): OrientFieldRead[Option[T]] = new OrientFieldRead[Option[T]] {
+    override def decode(fieldName: String): OrientRead[Option[T]] = option(embedded(fieldName, T.decode))
+  }
 
-  def readDouble(fieldName: String): OrientRead[Double] = element.readDouble(fieldName)
+  implicit def optionField[T](implicit T: OrientFieldRead[T]): OrientFieldRead[Option[T]] = new OrientFieldRead[Option[T]] {
+    override def decode(fieldName: String): OrientRead[Option[T]] = option(T.decode(fieldName))
+  }
+}
 
-  def readDoubleOpt(fieldName: String): OrientRead[Option[Double]] = element.readDoubleOpt(fieldName)
+object OrientObjectRead {
+  implicit val hnil = new OrientObjectRead[HNil] {
+    override def decode: OrientRead[HNil] = OrientRead.pure(HNil)
+  }
 
-  def readDatetime(fieldName: String): OrientRead[Date] = element.readDatetime(fieldName)
+  implicit def hcons[K <: Symbol, V, T <: HList](implicit key: Witness.Aux[K],
+                                                 sv: Lazy[OrientFieldRead[V]],
+                                                 st: Lazy[OrientObjectRead[T]]) = new OrientObjectRead[FieldType[K, V] :: T] {
+    override def decode: OrientRead[FieldType[K, V] :: T] =
+      OrientRead.product(sv.value.decode(key.value.name), st.value.decode).map { case (h, t) => field[K](h) :: t}
+  }
 
-  def readDatetimeOpt(fieldName: String): OrientRead[Option[Date]] = element.readDatetimeOpt(fieldName)
+  implicit val cnil = new OrientObjectRead[CNil] {
+    override def decode: OrientRead[CNil] = sys.error("Should not happen")
+  }
 
-  def readString(fieldName: String): OrientRead[String] = element.readString(fieldName)
+  implicit def ccons[K <: Symbol, V, T <: Coproduct](implicit key: Witness.Aux[K], sv: Lazy[OrientObjectRead[V]], st: OrientObjectRead[T]) = new OrientObjectRead[FieldType[K, V] :+: T] {
+    override def decode: OrientRead[FieldType[K, V] :+: T] =
+      OrientRead.flatMap[String, FieldType[K, V] :+: T](OrientRead.string("_type"), x => if(x == key.value.name) sv.value.decode.map(y => Inl(field[K](y))) else st.decode.map(y => Inr(y)))
+  }
 
-  def readStringOpt(fieldName: String): OrientRead[Option[String]] = element.readStringOpt(fieldName)
+  implicit def generic[T, R](implicit gen: LabelledGeneric.Aux[T, R], readRepr: Lazy[OrientObjectRead[R]]) = new OrientObjectRead[T] {
+    override def decode: OrientRead[T] = readRepr.value.decode.map(r => gen.from(r))
+  }
 
-  def readBinary(fieldName: String): OrientRead[List[Byte]] = element.readBinary(fieldName)
+  def apply[A](implicit A: OrientObjectRead[A]) = A
+}
 
-  def readBigDecimal(fieldName: String): OrientRead[BigDecimal] = element.readBigDecimal(fieldName)
+object OrientObjectWrite {
+  implicit val hnil = new OrientObjectWrite[HNil] {
+    override def encode(value: HNil): Map[String, Any] = Map.empty
+  }
 
-  def readBigDecimalOpt(fieldName: String): OrientRead[Option[BigDecimal]] = element.readBigDecimalOpt(fieldName)
+  implicit def hcons[K <: Symbol, V, T <: HList](implicit key: Witness.Aux[K],
+                                                 sv: Lazy[OrientFieldWrite[V]],
+                                                 st: Lazy[OrientObjectWrite[T]]) = new OrientObjectWrite[FieldType[K, V] :: T] {
+    override def encode(value: FieldType[K, V] :: T): Map[String, Any] = sv.value.encode(key.value.name, value.head) ++ st.value.encode(value.tail)
+  }
 
-  // for {
-  // id <- read[Int]
-  // name <- read[String]
-  // birthday <- read[Date]
-  // yield User(id, name, birthday)
+  implicit val cnil = new OrientObjectWrite[CNil] {
+    override def encode(value: CNil): Map[String, Any] = sys.error("Should not happen")
+  }
 
-  // case class User(id: Int, name: String, birthday: Date)
-  // name: "User"
-  // nameTypes: "id" -> Int, "name" -> String, "birthday" -> Date
-  // values= User(1, "Thomas", Date("...")) -> 1, "Thomas", Date(...)
-  // properties = nameTypes.map(_._1) zip values
-  // format = nameTypes.map(case (n, t) -> element.getProperty[t](n)) ==> User
+  implicit def ccons[K <: Symbol, V, T <: Coproduct](implicit key: Witness.Aux[K], sv: Lazy[OrientObjectWrite[V]], st: OrientObjectWrite[T]) = new OrientObjectWrite[FieldType[K, V] :+: T] {
+    override def encode(value: :+:[FieldType[K, V], T]): Map[String, Any] = value match {
+      case Inl(v) => sv.value.encode(v) ++ Map("_type" -> key.value.name)
+      case Inr(v) => st.encode(v)
+    }
+  }
 
+
+  implicit def generic[T, R](implicit gen: LabelledGeneric.Aux[T, R], writeRepr: Lazy[OrientObjectWrite[R]]) = new OrientObjectWrite[T] {
+    override def encode(value: T): Map[String, Any] = writeRepr.value.encode(gen.to(value))
+  }
+
+  def apply[A](implicit A: OrientObjectWrite[A]) = A
 }
