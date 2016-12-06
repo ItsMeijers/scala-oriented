@@ -47,7 +47,7 @@ object ReadInterpreter extends (ReadDSL ~> Reader[OrientElement, ?]) {
   */
 object ReadMapInterpreter extends (ReadDSL ~> Reader[Map[String, Any], ?]) {
   override def apply[A](fa: ReadDSL[A]): Reader[Map[String, Any], A] = Reader(map => fa match {
-    case Read(a) => throw new Exception("")
+    case Read(a) => a
     case ReadEmbedded(fieldName, orientFormat) => orientFormat.readerMap(map(fieldName).asInstanceOf[Map[String, Any]])
     case ReadList(fieldName, orientFormat)     => map(fieldName).asInstanceOf[List[Map[String, Any]]].map(orientFormat.readerMap.run)
     case ReadListOpt(fieldName, orientFormat)  => map.get(fieldName).map(_.asInstanceOf[List[Map[String, Any]]].map(orientFormat.readerMap.run))
