@@ -16,11 +16,6 @@ sealed trait OrientClient {
   def uri: String
 
   /**
-    * Database name for connecting to the database.
-    */
-  def db: String
-
-  /**
     * User string for authentication.
     */
   def user: String
@@ -105,16 +100,16 @@ case class InMemoryClient(db: String, user: String = "root", password: String = 
 /**
   * Creates an PLocal Client for OrientDB.
   */
-case class PLocalClient(uri: String, db: String, user: String, password: String, pool: Option[(Int, Int)] = None) extends OrientClient {
+case class PLocalClient(uri: String, user: String, password: String, pool: Option[(Int, Int)] = None) extends OrientClient {
 
-  val serverAdmin: OServerAdmin = new OServerAdmin(s"$uri/$db").connect(user, password)
+  val serverAdmin: OServerAdmin = new OServerAdmin(uri).connect(user, password)
 
 }
 
 /**
   * Creates an Remote Client for OrientDB.
   */
-case class RemoteClient(uri: String, db: String, user: String, password: String, pool: Option[(Int, Int)] = None) extends OrientClient {
+case class RemoteClient(uri: String, user: String, password: String, pool: Option[(Int, Int)] = None) extends OrientClient {
 
   val serverAdmin: OServerAdmin = new OServerAdmin(uri).connect(user, password)
 
