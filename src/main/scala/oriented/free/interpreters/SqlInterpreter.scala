@@ -1,6 +1,6 @@
 package oriented.free.interpreters
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import cats.data.{EitherT, Reader}
 import cats.{Id, ~>}
 import cats.syntax.list._
@@ -23,35 +23,37 @@ sealed trait SqlInterpreter[G[_]] extends (SqlDSL ~> G) {
     graph
     .command(new OCommandSQL(query))
     .execute[OrientDynaElementIterable]()
+    .asScala
     .map(toElement)
     .toList
 
-  private def executeCommandVertex[A](query: String, f: Reader[OrientElement, A]): List[Vertex[A]] =
+  private def executeCommandVertex[A](query: String, f: Reader[scala.collection.Map[String, Any], A]): List[Vertex[A]] =
     executeIterable[Vertex[A]](query) { r =>
       val orientVertex = r.asInstanceOf[OrientVertex]
-      Vertex(f(orientVertex), orientVertex)
+      Vertex(f(orientVertex.getProperties.asScala), orientVertex)
     }
 
-  private def executeCommandEdge[A](query: String, f: Reader[OrientElement,A]): List[Edge[A]] =
+  private def executeCommandEdge[A](query: String, f: Reader[scala.collection.Map[String, Any],A]): List[Edge[A]] =
     executeIterable[Edge[A]](query) { r =>
       val orientEdge = r.asInstanceOf[OrientEdge]
-      Edge(f(orientEdge), orientEdge)
+      Edge(f(orientEdge.getProperties.asScala), orientEdge)
     }
 
-  private def executeCommand[A](query: String, f: Reader[OrientElement, A]): A =
+  private def executeCommand[A](query: String, f: Reader[scala.collection.Map[String, Any], A]): A =
     f(graph
       .command(new OCommandSQL(query))
       .execute[OrientDynaElementIterable]()
-      .head.asInstanceOf[OrientElement])
+      .asScala
+      .head.asInstanceOf[OrientElement].getProperties.asScala)
 
-  private def executeInsertVertex[A](query: String, f: Reader[OrientElement, A]): Vertex[A] = {
+  private def executeInsertVertex[A](query: String, f: Reader[scala.collection.Map[String, Any], A]): Vertex[A] = {
     val orientVertex = graph.command(new OCommandSQL(query)).execute[OrientVertex]()
-    Vertex(f(orientVertex), orientVertex)
+    Vertex(f(orientVertex.getProperties.asScala), orientVertex)
   }
 
-  private def executeInsertEdge[A](query: String, f: Reader[OrientElement, A]): Edge[A] = {
+  private def executeInsertEdge[A](query: String, f: Reader[scala.collection.Map[String, Any], A]): Edge[A] = {
     val orientEdge = graph.command(new OCommandSQL(query)).execute[OrientEdge]()
-    Edge(f(orientEdge), orientEdge)
+    Edge(f(orientEdge.getProperties.asScala), orientEdge)
   }
 
 

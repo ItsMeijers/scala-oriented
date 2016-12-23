@@ -6,6 +6,7 @@ import com.tinkerpop.blueprints.Direction
 import oriented._
 import oriented.free.dsl.{EdgeDSL, GetInVertex, GetOutVertex, UpdateEdge}
 
+import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -19,7 +20,7 @@ sealed trait EdgeInterpreter[G[_]] extends (EdgeDSL ~> G) {
     */
   def getVertex[A, B](edge: Edge[A], direction: Direction, orientFormat: OrientFormat[B]): Vertex[B] = {
     val vertexElement = edge.orientElement.getVertex(direction)
-    Vertex(orientFormat.reader.run(vertexElement), vertexElement)
+    Vertex(orientFormat.readerMap.run(vertexElement.getProperties.asScala), vertexElement)
   }
 
   /**

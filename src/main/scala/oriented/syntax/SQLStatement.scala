@@ -29,7 +29,7 @@ case class SQLStatement(query: String) {
   /**
     * TODO
     */
-  def as[A](field: String): OrientIO[A] = sql.as[A](query, field, Reader(_.getProperty[A](field)))
+  def as[A](field: String): OrientIO[A] = sql.as[A](query, field, Reader(x => (x.getOrElse(field, sys.error(s"Field $field is missing")).asInstanceOf[A])))
 
 
 }

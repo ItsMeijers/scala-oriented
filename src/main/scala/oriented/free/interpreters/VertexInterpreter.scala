@@ -1,7 +1,6 @@
 package oriented.free.interpreters
 
-import scala.collection.JavaConverters._
-import collection.JavaConversions._
+import collection.JavaConverters._
 import cats.{Id, ~>}
 import cats.data.EitherT
 import com.tinkerpop.blueprints.impls.orient.{OrientEdge, OrientVertex}
@@ -30,8 +29,7 @@ sealed trait VertexInterpreter[M[_]] extends (VertexDSL ~> M) {
     */
   def interpretDSL[A](fa: VertexDSL[A]): A = fa match {
     case AddEdgeToVertex(vertex, edgeModel, inVertex, clusterName, of) =>
-      val elements = mapAsJavaMap(of.properties(edgeModel))
-        .asInstanceOf[java.util.Map[java.lang.String, java.lang.Object]]
+      val elements = of.properties(edgeModel).asJava
 
       val orientEdge = clusterName.map { cn =>
         vertex.orientElement.addEdge(
@@ -52,7 +50,7 @@ sealed trait VertexInterpreter[M[_]] extends (VertexDSL ~> M) {
         .getEdges(destination.orientElement, getDirection(direction), orientFormat.name)
         .asScala.map { te =>
           val orientEdge = te.asInstanceOf[OrientEdge]
-          Edge(orientFormat.reader.run(orientEdge), orientEdge)
+          Edge(orientFormat.readerMap.run(orientEdge.getProperties.asScala), orientEdge)
         }.toList
 
     case GetEdges(vertex, direction, orientFormat) =>
@@ -62,7 +60,7 @@ sealed trait VertexInterpreter[M[_]] extends (VertexDSL ~> M) {
         .asScala
         .map { te =>
           val orientEdge = te.asInstanceOf[OrientEdge]
-          Edge(orientFormat.reader.run(orientEdge), orientEdge)
+          Edge(orientFormat.readerMap.run(orientEdge.getProperties.asScala), orientEdge)
         }.toList
 
     case GetType(vertex) => VertexType(vertex.orientElement.getType)
@@ -72,7 +70,7 @@ sealed trait VertexInterpreter[M[_]] extends (VertexDSL ~> M) {
         .map(_.asInstanceOf[OrientVertex])
         .filter(_.getLabel == orientFormatVertex.name)
         .map { orientVertex =>
-          Vertex(orientFormatVertex.reader.run(orientVertex), orientVertex)
+          Vertex(orientFormatVertex.readerMap.run(orientVertex.getProperties.asScala), orientVertex)
         }.toList
     case UpdateVertex(newModel, orientVertex, orientFormat) =>
       orientFormat.properties(newModel).foreach { case (key, value) =>
