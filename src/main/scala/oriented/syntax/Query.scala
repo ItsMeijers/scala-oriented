@@ -60,19 +60,19 @@ class VertexQuery[A](val query: String, val orientFormat: OrientFormat[A])(impli
   type E = Vertex[A]
 
   def list: OrientIO[List[E]] =
-    vertexList[A](query, orientFormat.readerMap)
+    vertexList[A](query, orientFormat.reader)
 
   def nel: OrientIO[NonEmptyList[E]] =
-    vertexNel[A](query, orientFormat.readerMap)
+    vertexNel[A](query, orientFormat.reader)
 
   def option: OrientIO[Option[E]] =
-    optionalVertex[A](query, orientFormat.readerMap)
+    optionalVertex[A](query, orientFormat.reader)
 
   def unique: OrientIO[E] =
-    uniqueVertex[A](query, orientFormat.readerMap)
+    uniqueVertex[A](query, orientFormat.reader)
 
   def insert: OrientIO[E] =
-    insertVertex[A](query, orientFormat.readerMap)
+    insertVertex[A](query, orientFormat.reader)
 
 }
 
@@ -86,18 +86,18 @@ class EdgeQuery[A](val query: String, val orientFormat: OrientFormat[A])(implici
   type E = Edge[A]
 
   def list: OrientIO[List[E]] =
-    edgeList[A](query, orientFormat.readerMap)
+    edgeList[A](query, orientFormat.reader)
 
   def nel: OrientIO[NonEmptyList[E]] =
-    edgeNel[A](query, orientFormat.readerMap)
+    edgeNel[A](query, orientFormat.reader)
 
   def option: OrientIO[Option[E]] =
-    optionalEdge[A](query, orientFormat.readerMap)
+    optionalEdge[A](query, orientFormat.reader)
 
   def unique: OrientIO[E] =
-    uniqueEdge[A](query, orientFormat.readerMap)
+    uniqueEdge[A](query, orientFormat.reader)
 
   def insert: OrientIO[E] =
-    insertEdge[A](query, orientFormat.readerMap)
+    insertEdge[A](query, orientFormat.reader)
 
 }

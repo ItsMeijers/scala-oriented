@@ -20,7 +20,7 @@ sealed trait EdgeInterpreter[G[_]] extends (EdgeDSL ~> G) {
     */
   def getVertex[A, B](edge: Edge[A], direction: Direction, orientFormat: OrientFormat[B]): Vertex[B] = {
     val vertexElement = edge.orientElement.getVertex(direction)
-    Vertex(orientFormat.readerMap.run(vertexElement.getProperties.asScala), vertexElement)
+    Vertex(orientFormat.reader.run(vertexElement), vertexElement)
   }
 
   /**
@@ -30,9 +30,9 @@ sealed trait EdgeInterpreter[G[_]] extends (EdgeDSL ~> G) {
     case GetInVertex(edge, orientFormat)  => getVertex(edge, Direction.IN, orientFormat)
     case GetOutVertex(edge, orientFormat) => getVertex(edge, Direction.OUT, orientFormat)
     case UpdateEdge(newModel, orientEdge, orientFormat) =>
-      orientFormat.properties(newModel).foreach { case (key, value) =>
-        orientEdge.setProperty(key, value)
-      }
+
+      orientEdge.setProperties(orientFormat.properties(newModel).asJava)
+
       Edge(newModel, orientEdge)
   }
 

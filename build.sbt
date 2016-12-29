@@ -30,7 +30,8 @@ libraryDependencies ++= Seq(
   , "com.orientechnologies"        % "orientdb-server"   % "2.2.7" // For embedding OrientDB
   // Scala Libraries
   , "org.scalatest"                %% "scalatest"        % "3.0.0"  % "test"
-  , "org.scalacheck"               %% "scalacheck"       % "1.13.2" % "test"
+  , "org.scalacheck"               %% "scalacheck"       % "1.13.4" % "test"
+  , "com.github.alexarchambault"   %% "scalacheck-shapeless_1.13" % "1.1.4" % "test"
   , "org.typelevel"                %% "cats"             % "0.7.2"
   , "org.spire-math"               %% "kind-projector"   % "0.7.1"
   , "com.milessabin"               %% "si2712fix-plugin" % "1.2.0" cross CrossVersion.full

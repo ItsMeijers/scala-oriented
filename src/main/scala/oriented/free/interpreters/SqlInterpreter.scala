@@ -27,33 +27,33 @@ sealed trait SqlInterpreter[G[_]] extends (SqlDSL ~> G) {
     .map(toElement)
     .toList
 
-  private def executeCommandVertex[A](query: String, f: Reader[scala.collection.Map[String, Any], A]): List[Vertex[A]] =
+  private def executeCommandVertex[A](query: String, f: Reader[OrientElement, A]): List[Vertex[A]] =
     executeIterable[Vertex[A]](query) { r =>
       val orientVertex = r.asInstanceOf[OrientVertex]
-      Vertex(f(orientVertex.getProperties.asScala), orientVertex)
+      Vertex(f(orientVertex), orientVertex)
     }
 
-  private def executeCommandEdge[A](query: String, f: Reader[scala.collection.Map[String, Any],A]): List[Edge[A]] =
+  private def executeCommandEdge[A](query: String, f: Reader[OrientElement,A]): List[Edge[A]] =
     executeIterable[Edge[A]](query) { r =>
       val orientEdge = r.asInstanceOf[OrientEdge]
-      Edge(f(orientEdge.getProperties.asScala), orientEdge)
+      Edge(f(orientEdge), orientEdge)
     }
 
-  private def executeCommand[A](query: String, f: Reader[scala.collection.Map[String, Any], A]): A =
+  private def executeCommand[A](query: String, f: Reader[OrientElement, A]): A =
     f(graph
       .command(new OCommandSQL(query))
       .execute[OrientDynaElementIterable]()
       .asScala
-      .head.asInstanceOf[OrientElement].getProperties.asScala)
+      .head.asInstanceOf[OrientElement])
 
-  private def executeInsertVertex[A](query: String, f: Reader[scala.collection.Map[String, Any], A]): Vertex[A] = {
+  private def executeInsertVertex[A](query: String, f: Reader[OrientElement, A]): Vertex[A] = {
     val orientVertex = graph.command(new OCommandSQL(query)).execute[OrientVertex]()
-    Vertex(f(orientVertex.getProperties.asScala), orientVertex)
+    Vertex(f(orientVertex), orientVertex)
   }
 
-  private def executeInsertEdge[A](query: String, f: Reader[scala.collection.Map[String, Any], A]): Edge[A] = {
+  private def executeInsertEdge[A](query: String, f: Reader[OrientElement, A]): Edge[A] = {
     val orientEdge = graph.command(new OCommandSQL(query)).execute[OrientEdge]()
-    Edge(f(orientEdge.getProperties.asScala), orientEdge)
+    Edge(f(orientEdge), orientEdge)
   }
 
 

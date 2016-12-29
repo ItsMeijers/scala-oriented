@@ -3,16 +3,20 @@ package oriented
 import java.util.Date
 
 import cats.data.Reader
+import com.tinkerpop.blueprints.impls.orient.OrientElement
 import oriented.free.dsl._
-import oriented.free.interpreters.ReadMapInterpreter
+import oriented.free.interpreters.{ReadInterpreter, ReadMapInterpreter}
 import oriented.syntax.OrientRead
+
+import scala.reflect.ClassTag
 
 /**
   * OrientFormat typeclass makes it able to transform from and to OrientElements from a specific model A.
   */
 trait OrientFormat[A] {
 
-  lazy val readerMap: Reader[scala.collection.Map[String, Any], A] = read.foldMapUnsafe(ReadMapInterpreter)
+  lazy val readerMap: Reader[Map[String, Any], A] = read.foldMapUnsafe(ReadMapInterpreter)
+  lazy val reader: Reader[OrientElement, A] = read.foldMapUnsafe(ReadInterpreter)
 
   /**
     * Formats an OrientElement to the model of type A
@@ -33,6 +37,8 @@ trait OrientFormat[A] {
   private val element: Reads[ReadDSL] = Reads.reads[ReadDSL]
 
   def read[R](r: R): OrientRead[R] = element.read(r)
+
+  def readCustom[R](r: Map[String, Any] => R): OrientRead[R] = element.readCustom(r)
 
   def read[T](fieldName: String)(implicit orientFormat: OrientFormat[T]): OrientRead[T] = element.readEmbedded(fieldName, orientFormat)
 
@@ -91,4 +97,16 @@ trait OrientFormat[A] {
   // properties = nameTypes.map(_._1) zip values
   // format = nameTypes.map(case (n, t) -> element.getProperty[t](n)) ==> User
 
+}
+
+object OrientFormat {
+
+  import oriented.maps._
+  import oriented.maps.scalaMap._
+
+  implicit def derive[A](implicit CT: ClassTag[A], F: FromMappable[A, Row], T: ToMappable[A, Row]) = new OrientFormat[A] {
+    def read: OrientRead[A] = readCustom(r => F.apply(r).getOrElse(sys.error("Unable to read row")))
+    def name: String = CT.runtimeClass.getSimpleName
+    def properties(model: A): Map[String, Any] = T(model)
+  }
 }
