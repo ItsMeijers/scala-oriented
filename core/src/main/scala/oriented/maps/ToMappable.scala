@@ -85,6 +85,9 @@ object ToMappable extends LowerPrioToMappable {
   implicit def listMappable[K <: Symbol, H, T <: HList, M](implicit K: Witness.Aux[K], H: MappableType[M, H], T: ToMappable[T, M]) =
     toMappableTraversableOnceMappable[K, H, T, List, M]
 
+  implicit def vectorMappable[K <: Symbol, H, T <: HList, M](implicit K: Witness.Aux[K], H: MappableType[M, H], T: ToMappable[T, M]) =
+    toMappableTraversableOnceMappable[K, H, T, Vector, M]
+
   def toMappableTraversableOnceToMappable[K <: Symbol, H, T <: HList, C[_], M](implicit
     K: Witness.Aux[K],
     BMT: BaseMappableType[M],
@@ -104,6 +107,10 @@ object ToMappable extends LowerPrioToMappable {
 
   implicit def listToMappable[K <: Symbol, H, T <: HList, M](implicit BMT: BaseMappableType[M], K: Witness.Aux[K], H: Lazy[ToMappable[H, M]], T: ToMappable[T, M]) =
     toMappableTraversableOnceToMappable[K, H, T, List, M]
+
+  implicit def vectorToMappable[K <: Symbol, H, T <: HList, M](implicit BMT: BaseMappableType[M], K: Witness.Aux[K], H: Lazy[ToMappable[H, M]], T: ToMappable[T, M]) =
+    toMappableTraversableOnceToMappable[K, H, T, Vector, M]
+
 
 
 
