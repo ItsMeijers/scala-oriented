@@ -1,5 +1,7 @@
 package oriented.maps
 
+import cats.implicits._
+
 import shapeless._
 import shapeless.labelled.{FieldType, field}
 
@@ -67,6 +69,30 @@ object FromMappable extends LowerPrioFromMappable {
         tail <- T(m)
       } yield {
         field[K](BMT.get(m, K.value.name).flatMap(H.value.apply)) :: tail
+      }
+    }
+
+  implicit def mapMappable[K <: Symbol, H, T <: HList, M](implicit BMT: BaseMappableType[M], K: Witness.Aux[K], H: MappableType[M, H], T: FromMappable[T, M]) =
+    new FromMappable[FieldType[K, Map[String, H]] :: T, M] {
+      override def apply(m: M): Option[FieldType[K, Map[String, H]] :: T] = for {
+        map <- BMT.get(m, K.value.name)
+        keys = BMT.keys(map)
+        pairs <- keys.toList.traverse[Option, (String, H)](key => H.get(map, key).map(v => key -> v))
+        tail <- T(m)
+      } yield {
+        field[K](pairs.toMap) :: tail
+      }
+    }
+
+  implicit def mapFromMappable[K <: Symbol, H, T <: HList, M](implicit BMT: BaseMappableType[M], K: Witness.Aux[K], H: Lazy[FromMappable[H, M]], T: FromMappable[T, M]) =
+    new FromMappable[FieldType[K, Map[String, H]] :: T, M] {
+      override def apply(m: M): Option[FieldType[K, Map[String, H]] :: T] = for {
+        map <- BMT.get(m, K.value.name)
+        keys = BMT.keys(map)
+        pairs <- keys.toList.traverse[Option, (String, H)](key => BMT.get(map, key).flatMap(m => H.value(m).map(v => key -> v)))
+        tail <- T(m)
+      } yield {
+        field[K](pairs.toMap) :: tail
       }
     }
 

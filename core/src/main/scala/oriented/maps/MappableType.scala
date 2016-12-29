@@ -3,6 +3,7 @@ package oriented.maps
 
 trait BaseMappableType[M] {
   def base: M
+  def keys(m: M): Set[String]
   def get(m: M, key: String): Option[M]
   def getAll(m: M, key: String): Seq[M]
   def put(key: String, value: M, tail: M): M

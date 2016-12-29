@@ -74,5 +74,7 @@ object scalaMap {
     override def put(key: String, values: Seq[Row], tail: Row): Row = {
       tail + (key -> values)
     }
+
+    override def keys(m: Row): Set[String] = m.keySet
   }
 }
