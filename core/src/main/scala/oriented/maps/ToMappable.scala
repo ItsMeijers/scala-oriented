@@ -9,7 +9,18 @@ trait ToMappable[L, M] {
   def apply(l: L): M
 }
 
-trait LowerPrioToMappable {
+trait EvenLowerPrioToMappable {
+
+  implicit def hconsToMappable0[K <: Symbol, H, T <: HList, M]
+  (implicit wit: Witness.Aux[K], bmt: BaseMappableType[M], H: Lazy[ToMappable[H, M]], T: ToMappable[T, M])
+  : ToMappable[FieldType[K, H] :: T, M] = new ToMappable[FieldType[K, H] :: T, M] {
+    override def apply(l: FieldType[K, H] :: T): M =
+      bmt.put(wit.value.name, H.value(l.head), T(l.tail))
+  }
+
+}
+
+trait LowerPrioToMappable extends EvenLowerPrioToMappable {
 
   implicit def hnilToMappable[M](implicit mbt: BaseMappableType[M])
   : ToMappable[HNil, M] = new ToMappable[HNil, M] {
@@ -18,13 +29,6 @@ trait LowerPrioToMappable {
 
   implicit def cnilToMappable[M](implicit mbt: BaseMappableType[M]): ToMappable[CNil, M] = new ToMappable[CNil, M] {
     override def apply(l: CNil): M = mbt.base
-  }
-
-  implicit def hconsToMappable0[K <: Symbol, H, T <: HList, M]
-  (implicit wit: Witness.Aux[K], bmt: BaseMappableType[M], H: Lazy[ToMappable[H, M]], T: ToMappable[T, M])
-  : ToMappable[FieldType[K, H] :: T, M] = new ToMappable[FieldType[K, H] :: T, M] {
-    override def apply(l: FieldType[K, H] :: T): M =
-      bmt.put(wit.value.name, H.value(l.head), T(l.tail))
   }
 
 

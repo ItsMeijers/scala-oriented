@@ -3,7 +3,7 @@ package dsl
 import java.util.{Date, UUID}
 
 import cats.data.NonEmptyList
-import enterprisedomain.{LastReservableTime, Tree, Wrapped}
+import enterprisedomain._
 import org.scalacheck.Prop.forAll
 import org.scalacheck.Shapeless._
 import org.scalacheck.{Arbitrary, Gen, Properties}
@@ -14,6 +14,7 @@ import oriented.maps.scalaMap._
 
 class DerivedReadSpec extends Properties("DerivedReadSpec") {
 
+  implicit val dayMapping = string.xmap(Day.fromString)(_.str)
 
 
   property("int") = forAll { m: Wrapped[Int] => roundTrip(m) }
@@ -24,6 +25,8 @@ class DerivedReadSpec extends Properties("DerivedReadSpec") {
   property("short") = forAll { m: Wrapped[Short] => roundTrip(m) }
   property("date") = forAll { m: Wrapped[Date] => roundTrip(m) }
   property("string") = forAll { m: Wrapped[String] => roundTrip(m) }
+
+  property("xmap") = forAll { m: Wrapped[Day] => roundTrip(m) }
 
   property("list - primitives") = forAll { m: Wrapped[List[Int]] => roundTrip(m) }
   property("list - products") = forAll { m: Wrapped[List[Wrapped[Int]]] => roundTrip(m) }
@@ -48,10 +51,23 @@ class DerivedReadSpec extends Properties("DerivedReadSpec") {
   property("map - primitives") = forAll { m: Wrapped[Map[String, Int]] => roundTrip(m) }
   property("map - products") = forAll { m: Wrapped[Map[String, Wrapped[Int]]] => roundTrip(m) }
   property("map - coproducts") = forAll { m: Wrapped[Map[String, Tree[Int]]] => roundTrip(m) }
+  property("map - list") = forAll { m: Wrapped[Map[String, List[Int]]] => roundTrip(m) }
+//  property("map - seq") = forAll { m: Wrapped[Map[String, Seq[Int]]] => roundTrip(m) }
+//  property("map - set") = forAll { m: Wrapped[Map[String, Set[Int]]] => roundTrip(m) }
 
-  property("coproducts") = forAll { m: Wrapped[Tree[Int]] => roundTrip(m) }
+  property("coproducts - primitives") = forAll { m: Wrapped[Tree[Int]] => roundTrip(m) }
+  property("coproducts - products") = forAll { m: Wrapped[Tree[Wrapped[Int]]] => roundTrip(m) }
+  property("coproducts - list") = forAll { m: Wrapped[Tree[List[Int]]] => roundTrip(m) }
+  property("coproducts - set") = forAll { m: Wrapped[Tree[Set[Int]]] => roundTrip(m) }
+  property("coproducts - seq") = forAll { m: Wrapped[Tree[Seq[Int]]] => roundTrip(m) }
+  property("coproducts - vector") = forAll { m: Wrapped[Tree[Vector[Int]]] => roundTrip(m) }
+  property("coproducts - option") = forAll { m: Wrapped[Tree[Option[Int]]] => roundTrip(m) }
+  property("coproducts - map with primitives") = forAll { m: Wrapped[Tree[Map[String, Int]]] => roundTrip(m) }
+  property("coproducts - map with products") = forAll { m: Wrapped[Tree[Map[String, Wrapped[Int]]]] => roundTrip(m) }
+  property("coproducts - map with coproducts") = forAll { m: Wrapped[Tree[Map[String, Tree[Int]]]] => roundTrip(m) }
 
-  implicitly[ToMappable[Wrapped[Option[Int]], Map[String, Any]]]
+//  property("openinghours") = forAll { m: OpeningHours => roundTrip(m) }
+//  property("openinghours") = forAll { m: Map[String, List[Range[Time]]] => roundTrip(m) }
 
   implicit val orientClient = InMemoryClient("DerivedReadSpec")
 

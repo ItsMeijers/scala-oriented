@@ -11,15 +11,7 @@ trait FromMappable[L, M] {
   def apply(m: M): Option[L]
 }
 
-trait LowerPrioFromMappable {
-  implicit def hnilFromMappable[M]: FromMappable[HNil, M] = new FromMappable[HNil, M] {
-    override def apply(m: M): Option[HNil] = Some(HNil)
-  }
-
-  implicit def cnilFromMappable[M]: FromMappable[CNil, M] = new FromMappable[CNil, M] {
-    override def apply(m: M): Option[CNil] = None
-  }
-
+trait EvenLowerPrioFromMappable {
   implicit def hconsFromMappable0[K <: Symbol, H, T <: HList, M]
   (implicit wit: Witness.Aux[K], bmt: BaseMappableType[M], H: Lazy[FromMappable[H, M]], T: FromMappable[T, M])
   : FromMappable[FieldType[K, H] :: T, M] = new FromMappable[FieldType[K, H] :: T, M] {
@@ -29,7 +21,16 @@ trait LowerPrioFromMappable {
       t <- T(m)
     } yield field[K](h) :: t
   }
+}
 
+trait LowerPrioFromMappable extends EvenLowerPrioFromMappable {
+  implicit def hnilFromMappable[M]: FromMappable[HNil, M] = new FromMappable[HNil, M] {
+    override def apply(m: M): Option[HNil] = Some(HNil)
+  }
+
+  implicit def cnilFromMappable[M]: FromMappable[CNil, M] = new FromMappable[CNil, M] {
+    override def apply(m: M): Option[CNil] = None
+  }
 
   implicit def hconsFromMappable1[K <: Symbol, H, T <: HList, M]
   (implicit wit: Witness.Aux[K], mbt: BaseMappableType[M], H: MappableType[M, H], T: FromMappable[T, M])
