@@ -3,6 +3,7 @@ package dsl
 import java.util.{Date, UUID}
 
 import cats.data.NonEmptyList
+import enterprisedomain.{LastReservableTime, Tree, Wrapped}
 import org.scalacheck.Prop.forAll
 import org.scalacheck.Shapeless._
 import org.scalacheck.{Arbitrary, Gen, Properties}
@@ -37,40 +38,9 @@ class DerivedReadSpec extends Properties("DerivedReadSpec") {
   property("seq - coproducts") = forAll { m: Wrapped[Seq[Tree[Int]]] => roundTrip(m) }
 
 
-//  property("option") = forAll { m: Wrapped[Option[Int]] => roundTrip(m) }
-//  property("coproducts") = forAll { m: Wrapped[LastReservableTime] => roundTrip(m) }
-  //TODO: map, set?
+  property("coproducts") = forAll { m: Wrapped[LastReservableTime] => roundTrip(m) }
 
   implicit val orientClient = InMemoryClient("DerivedReadSpec")
-
-
-//  implicitly[FromMappable[Branch[Int], Map[String, Any]]]
-//  implicitly[FromMappable[Leaf[Int], Map[String, Any]]]
-//  implicitly[FromMappable[Tree[Int], Map[String, Any]]]
-//  implicitly[FromMappable[List[LastReservableTime], Map[String, Any]]]
-//  implicitly[FromMappable[WrappedLastReservableTime, Map[String, Any]]]
-//  implicitly[FromMappable[Wrapped[LastReservableTime], Map[String, Any]]]
-
-  //[GenTraversableOnce] x [Product, Coproduct, Primitive]
-  //Option x [Product, Coproduct, Primitive]
-
-
-  implicitly[FromMappable[Wrapped[Seq[Int]], Map[String, Any]]]
-//  implicitly[FromMappable[Wrapped[Option[Tree[Int]]], Map[String, Any]]]
-//  implicitly[FromMappable[Wrapped[List[Int]], Map[String, Any]]]
-  implicitly[FromMappable[Wrapped[Seq[Wrapped[Int]]], Map[String, Any]]]
-//  implicitly[FromMappable[Wrapped[List[Tree[Int]]], Map[String, Any]]]
-
-  implicitly[ToMappable[Wrapped[Seq[Int]], Map[String, Any]]]
-//  implicitly[ToMappable[Wrapped[Option[Tree[Int]]], Map[String, Any]]]
-//  implicitly[ToMappable[Wrapped[List[Int]], Map[String, Any]]]
-//  implicitly[ToMappable[Wrapped[List[Wrapped[Int]]], Map[String, Any]]]
-//  implicitly[ToMappable[Wrapped[List[Tree[Int]]], Map[String, Any]]]
-//  implicitly[ToMappable[Leaf[Int], Map[String, Any]]]
-//  implicitly[ToMappable[Tree[Int], Map[String, Any]]]
-//  implicitly[ToMappable[List[LastReservableTime], Map[String, Any]]]
-//  implicitly[ToMappable[Wrapped[Wrapped[Int]], Map[String, Any]]]
-//  implicitly[ToMappable[Wrapped[LastReservableTime], Map[String, Any]]]
 
   def roundTrip[A](value: A)(implicit OF: OrientFormat[A]): Boolean = {
 

@@ -1,4 +1,4 @@
-package dsl
+package enterprisedomain
 
 case class Wrapped[A](value: A)
 
@@ -23,5 +23,3 @@ object LastReservableTime {
   case class Manual(time: Long) extends LastReservableTime
 
 }
-
-//case class WrappedLastReservableTime(value: LastReservableTime)
