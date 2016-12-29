@@ -43,14 +43,14 @@ object scalaMap {
     override def to(value: T): Any = toFn(value)
   }
 
-  implicit val bool: ScalaMappableType[Boolean] = createMapping[Boolean](_.toString.toBoolean, identity)
-  implicit val int: ScalaMappableType[Int] = createMapping[Int](_.toString.toInt, identity)
-  implicit val long: ScalaMappableType[Long] = createMapping[Long](_.toString.toLong, identity)
-  implicit val short: ScalaMappableType[Short] = createMapping[Short](_.toString.toShort, identity)
-  implicit val float: ScalaMappableType[Float] = createMapping[Float](_.toString.toFloat, identity)
+  implicit val bool: ScalaMappableType[Boolean] = createMapping[Boolean](_.asInstanceOf[Boolean], identity)
+  implicit val int: ScalaMappableType[Int] = createMapping[Int](_.asInstanceOf[Int], identity)
+  implicit val long: ScalaMappableType[Long] = createMapping[Long](_.asInstanceOf[Long], identity)
+  implicit val short: ScalaMappableType[Short] = createMapping[Short](_.asInstanceOf[Short], identity)
+  implicit val float: ScalaMappableType[Float] = createMapping[Float](_.asInstanceOf[Float], identity)
   implicit val bigDecimal: ScalaMappableType[BigDecimal] = createMapping[BigDecimal](_.asInstanceOf[BigDecimal], identity)
-  implicit val double: ScalaMappableType[Double] = createMapping[Double](_.toString.toDouble, identity)
-  implicit val string: ScalaMappableType[String] = createMapping[String](_.toString, identity)
+  implicit val double: ScalaMappableType[Double] = createMapping[Double](_.asInstanceOf[Double], identity)
+  implicit val string: ScalaMappableType[String] = createMapping[String](_.asInstanceOf[String], identity)
   implicit val date: ScalaMappableType[Date] = createMapping[Date](_.asInstanceOf[Date], identity)
   implicit val uuid: ScalaMappableType[UUID] = createMapping[UUID](_.asInstanceOf[UUID], identity)
 
