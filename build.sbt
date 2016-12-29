@@ -45,12 +45,12 @@ val core = project.in(file("core"))
       )
 
 
-
+//test domain is there, so shapeless derivation works
 val testDomain = project.in(file("test-domain"))
   .settings(commonSettings)
   .settings(doNotPublishArtifact)
 
-
+//separate test module, where you can test all the submodules and only have to make a dependency mess once :-)
 val test = project.in(file("test"))
     .dependsOn(core, testDomain)
     .settings(commonSettings)
@@ -61,7 +61,7 @@ val test = project.in(file("test"))
         "com.orientechnologies"        % "orientdb-server"   % orientVersion,
         "org.scalatest"                %% "scalatest"        % "3.0.0",
         "org.scalacheck"               %% "scalacheck"       % "1.13.4",
-        "com.github.alexarchambault"   %% "scalacheck-shapeless_1.13" % "1.1.3"
+        "com.github.alexarchambault"   %% "scalacheck-shapeless_1.13" % "1.1.4"
       )
     )
 

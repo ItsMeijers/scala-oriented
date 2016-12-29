@@ -52,6 +52,24 @@ trait LowerPrioFromMappable {
 
 object FromMappable extends LowerPrioFromMappable {
 
+  implicit def optionMappable[K <: Symbol, H, T <: HList, M](implicit K: Witness.Aux[K], H: MappableType[M, H], T: FromMappable[T, M]) =
+    new FromMappable[FieldType[K, Option[H]] :: T, M] {
+      override def apply(m: M): Option[::[FieldType[K, Option[H]], T]] = for {
+        tail <- T(m)
+      } yield {
+        field[K](H.get(m, K.value.name)) :: tail
+      }
+    }
+
+  implicit def optionFromMappable[K <: Symbol, H, T <: HList, M](implicit BMT: BaseMappableType[M], K: Witness.Aux[K], H: Lazy[FromMappable[H, M]], T: FromMappable[T, M]) =
+    new FromMappable[FieldType[K, Option[H]] :: T, M] {
+      override def apply(m: M): Option[::[FieldType[K, Option[H]], T]] = for {
+        tail <- T(m)
+      } yield {
+        field[K](BMT.get(m, K.value.name).flatMap(H.value.apply)) :: tail
+      }
+    }
+
   def fromMappableTraversableOnceMappable[K <: Symbol, H, T <: HList, C[_], M](implicit
                                                                                K: Witness.Aux[K],
                                                                                H: MappableType[M, H],

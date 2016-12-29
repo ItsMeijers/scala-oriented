@@ -37,8 +37,13 @@ class DerivedReadSpec extends Properties("DerivedReadSpec") {
   property("seq - products") = forAll { m: Wrapped[Seq[Wrapped[Int]]] => roundTrip(m) }
   property("seq - coproducts") = forAll { m: Wrapped[Seq[Tree[Int]]] => roundTrip(m) }
 
+  property("option - primitives") = forAll { m: Wrapped[Option[Int]] => roundTrip(m) }
+  property("option - products") = forAll { m: Wrapped[Option[Wrapped[Int]]] => roundTrip(m) }
+  property("option - coproducts") = forAll { m: Wrapped[Option[Tree[Int]]] => roundTrip(m) }
 
-  property("coproducts") = forAll { m: Wrapped[LastReservableTime] => roundTrip(m) }
+  property("coproducts") = forAll { m: Wrapped[Tree[Int]] => roundTrip(m) }
+
+  implicitly[ToMappable[Wrapped[Option[Int]], Map[String, Any]]]
 
   implicit val orientClient = InMemoryClient("DerivedReadSpec")
 
