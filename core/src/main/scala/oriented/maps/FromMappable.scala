@@ -116,6 +116,30 @@ object FromMappable extends LowerPrioFromMappable {
     }
   }
 
+  implicit def mapTraversableOnceFromMappable[K <: Symbol, H, T <: HList, M, C[_]](implicit
+                                                                               BMT: BaseMappableType[M],
+                                                                               K: Witness.Aux[K],
+                                                                               H: Lazy[FromMappable[H, M]],
+                                                                               T: FromMappable[T, M],
+                                                                               CBF: CanBuildFrom[_, H, C[H]]): FromMappable[FieldType[K, Map[String, C[H]]] :: T, M] = new FromMappable[FieldType[K, Map[String, C[H]]] :: T, M] {
+    override def apply(m: M): Option[::[FieldType[K, Map[String, C[H]]], T]] = for {
+      map <- BMT.get(m, K.value.name)
+      keys = BMT.keys(map)
+      pairs <- keys.toList.traverse[Option, (String, C[H])] { key =>
+        val members = BMT.getAll(map, key)
+        val results = members.toList.traverse[Option, H](x => H.value.apply(x))
+        results.map { v =>
+          val b = CBF()
+          b ++= v
+          key -> b.result()
+        }
+      }
+      tail <- T(m)
+    } yield {
+      field[K](pairs.toMap) :: tail
+    }
+  }
+
   implicit def mapFromMappable[K <: Symbol, H, T <: HList, M](implicit
                                                               BMT: BaseMappableType[M],
                                                               K: Witness.Aux[K],

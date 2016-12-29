@@ -89,6 +89,16 @@ object ToMappable extends LowerPrioToMappable {
         BMT.put(K.value.name, l.head.foldLeft(BMT.base) { case (acc, (k,v)) => BMT.put(k, H.value.apply(v), acc) }, T(l.tail))
     }
 
+  implicit def mapTraversableOnceToMappable[K <: Symbol, H, T <: HList, C[_], M](implicit
+                                                                               K: Witness.Aux[K],
+                                                                               BMT: BaseMappableType[M],
+                                                                               H: Lazy[ToMappable[H, M]],
+                                                                               T: ToMappable[T, M],
+                                                                               IS: IsTraversableOnceAux[C[H], H]): ToMappable[FieldType[K, Map[String, C[H]]] :: T, M] = new ToMappable[FieldType[K, Map[String, C[H]]] :: T, M] {
+    override def apply(l: ::[FieldType[K, Map[String, C[H]]], T]): M =
+      BMT.put(K.value.name, l.head.foldLeft(BMT.base) { case (acc, (k,v)) => BMT.put(k, IS.conversion(v).toList.map(H.value.apply), acc) }, T(l.tail))
+  }
+
   implicit def mapTraversableOnceMappable[K <: Symbol, H, T <: HList, C[_], M](implicit
                                                             K: Witness.Aux[K],
                                                             BMT: BaseMappableType[M],
