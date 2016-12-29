@@ -51,9 +51,10 @@ class DerivedReadSpec extends Properties("DerivedReadSpec") {
   property("map - primitives") = forAll { m: Wrapped[Map[String, Int]] => roundTrip(m) }
   property("map - products") = forAll { m: Wrapped[Map[String, Wrapped[Int]]] => roundTrip(m) }
   property("map - coproducts") = forAll { m: Wrapped[Map[String, Tree[Int]]] => roundTrip(m) }
+
   property("map - list") = forAll { m: Wrapped[Map[String, List[Int]]] => roundTrip(m) }
-//  property("map - seq") = forAll { m: Wrapped[Map[String, Seq[Int]]] => roundTrip(m) }
-//  property("map - set") = forAll { m: Wrapped[Map[String, Set[Int]]] => roundTrip(m) }
+  property("map - seq") = forAll { m: Wrapped[Map[String, Seq[Int]]] => roundTrip(m) }
+  property("map - set") = forAll { m: Wrapped[Map[String, Set[Int]]] => roundTrip(m) }
 
   property("coproducts - primitives") = forAll { m: Wrapped[Tree[Int]] => roundTrip(m) }
   property("coproducts - products") = forAll { m: Wrapped[Tree[Wrapped[Int]]] => roundTrip(m) }
