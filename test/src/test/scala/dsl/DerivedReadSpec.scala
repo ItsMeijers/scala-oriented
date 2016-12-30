@@ -22,12 +22,10 @@ class DerivedReadSpec extends Properties("DerivedReadSpec") {
   property("short") = forAll { m: Wrapped[Short] => roundTrip(m) }
   property("date") = forAll { m: Wrapped[Date] => roundTrip(m) }
   property("string") = forAll { m: Wrapped[String] => roundTrip(m) }
-  property("enumeratum") = forAll { m: Wrapped[WeekDay] => roundTrip(m) }
 
   property("list - primitives") = forAll { m: Wrapped[List[Int]] => roundTrip(m) }
   property("list - products") = forAll { m: Wrapped[List[Wrapped[Int]]] => roundTrip(m) }
   property("list - coproducts") = forAll { m: Wrapped[List[LastReservableTime]] => roundTrip(m) }
-  property("list - enumeratum") = forAll { m: Wrapped[List[WeekDay]] => roundTrip(m) }
 
   property("set - primitives") = forAll { m: Wrapped[Set[Int]] => roundTrip(m) }
   property("set - products") = forAll { m: Wrapped[Set[Wrapped[Int]]] => roundTrip(m) }
@@ -75,8 +73,6 @@ class DerivedReadSpec extends Properties("DerivedReadSpec") {
   property("coproducts - map :: primitives") = forAll { m: Wrapped[Tree[Map[String, Int]]] => roundTrip(m) }
   property("coproducts - map :: products") = forAll { m: Wrapped[Tree[Map[String, Wrapped[Int]]]] => roundTrip(m) }
   property("coproducts - map :: coproducts") = forAll { m: Wrapped[Tree[Map[String, LastReservableTime]]] => roundTrip(m) }
-
-  property("openinghours") = forAll { m: Wrapped[Map[String, Set[Range[Time]]]] => roundTrip(m) }
 
   implicit val orientClient = InMemoryClient("DerivedReadSpec")
 

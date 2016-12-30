@@ -78,7 +78,7 @@ trait FromMappablePrio extends LowerPrioFromMappable {
       keys = BMT.keys(map)
       pairs <- keys.toList.traverse[Option, (String, C[H])] { key =>
         val members = BMT.getAll(map, key)
-        val results = members.toList.traverse[Option, H](x => H.value.apply(x))
+        val results = members.toList.traverse(H.value.apply)
         results.map { v =>
           val b = CBF()
           b ++= v

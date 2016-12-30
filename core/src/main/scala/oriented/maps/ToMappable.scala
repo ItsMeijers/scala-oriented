@@ -54,7 +54,6 @@ trait LowerPrioToMappable extends EvenLowerPrioToMappable {
 }
 
 trait ToMappablePrio extends LowerPrioToMappable {
-  type IsTraversableOnceAux[Repr, A0] = IsTraversableOnce[Repr] { type A = A0 }
 
   implicit def optionToMappable[K <: Symbol, H, T <: HList, M](implicit BMT: BaseMappableType[M], K: Witness.Aux[K], H: Lazy[ToMappable[H, M]], T: ToMappable[T, M]): ToMappable[FieldType[K, Option[H]] :: T, M] =
     new ToMappable[FieldType[K, Option[H]] :: T, M] {
