@@ -1,11 +1,10 @@
 package oriented.maps
 
 import cats.implicits._
-
 import shapeless._
 import shapeless.labelled.{FieldType, field}
 
-import scala.collection.generic.{CanBuildFrom, IsTraversableOnce}
+import scala.collection.generic.CanBuildFrom
 
 trait FromMappable[L, M] {
   def apply(m: M): Option[L]
