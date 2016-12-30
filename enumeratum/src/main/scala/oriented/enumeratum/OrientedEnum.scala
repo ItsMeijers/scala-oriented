@@ -10,13 +10,13 @@ import scala.collection.generic.CanBuildFrom
 
 trait OrientedEnumLowerPrioImplicits[EntryType <: EnumEntry] { enum: Enum[EntryType] =>
 
-  implicit def enumeratumMapFromMappableFromMappable[K <: Symbol, H, T <: HList, C[_], M](implicit
+  implicit def enumeratumTraversableMapDecoderMapDecoder[K <: Symbol, H, T <: HList, C[_], M](implicit
                                                                                           BMT: BaseMappableType[M],
                                                                                           K: Witness.Aux[K],
-                                                                                          H: Lazy[FromMappable[H, M]],
-                                                                                          T: FromMappable[T, M],
-                                                                                          CBF: CanBuildFrom[_, H, C[H]]): FromMappable[FieldType[K, Map[EntryType, C[H]]] :: T, M] =
-    new FromMappable[FieldType[K, Map[EntryType, C[H]]] :: T, M] {
+                                                                                          H: Lazy[MapDecoder[H, M]],
+                                                                                          T: MapDecoder[T, M],
+                                                                                          CBF: CanBuildFrom[_, H, C[H]]): MapDecoder[FieldType[K, Map[EntryType, C[H]]] :: T, M] =
+    new MapDecoder[FieldType[K, Map[EntryType, C[H]]] :: T, M] {
       def apply(m: M): Option[FieldType[K, Map[EntryType, C[H]]] :: T] =
         for {
           map <- BMT.get(m, K.value.name)
@@ -38,13 +38,13 @@ trait OrientedEnumLowerPrioImplicits[EntryType <: EnumEntry] { enum: Enum[EntryT
         }
     }
 
-  implicit def enumeratumMapToMappableToMappable[K <: Symbol, H, T <: HList, C[_], M](implicit
-                                                                                        BMT: BaseMappableType[M],
-                                                                                        K: Witness.Aux[K],
-                                                                                        H: Lazy[ToMappable[H, M]],
-                                                                                        T: ToMappable[T, M],
-                                                                                        IS: IsTraversableOnceAux[C[H], H]): ToMappable[FieldType[K, Map[EntryType, C[H]]] :: T, M] =
-    new ToMappable[FieldType[K, Map[EntryType, C[H]]] :: T, M] {
+  implicit def enumeratumTraversableMapDecoderMapEncoder[K <: Symbol, H, T <: HList, C[_], M](implicit
+                                                                                      BMT: BaseMappableType[M],
+                                                                                      K: Witness.Aux[K],
+                                                                                      H: Lazy[MapEncoder[H, M]],
+                                                                                      T: MapEncoder[T, M],
+                                                                                      IS: IsTraversableOnceAux[C[H], H]): MapEncoder[FieldType[K, Map[EntryType, C[H]]] :: T, M] =
+    new MapEncoder[FieldType[K, Map[EntryType, C[H]]] :: T, M] {
       override def apply(l: ::[FieldType[K, Map[EntryType, C[H]]], T]): M =
         BMT.put(K.value.name, l.head.foldLeft(BMT.base) { case (acc, (k,v)) => BMT.put(k.entryName, IS.conversion(v).toList.map(H.value.apply), acc) }, T(l.tail))
     }
@@ -57,13 +57,13 @@ trait OrientedEnum[EntryType <: EnumEntry] extends OrientedEnumLowerPrioImplicit
     MappableType.string.xmapF(x => enum.withNameOption(x))(_.entryName)
 
 
-  implicit def enumeratumMapMappableTypeFromMappable[K <: Symbol, H, T <: HList, C[_], M](implicit
-                                                         BMT: BaseMappableType[M],
-                                                         K: Witness.Aux[K],
-                                                         H: MappableType[M, H],
-                                                         T: FromMappable[T, M],
-                                                         CBF: CanBuildFrom[_, H, C[H]]): FromMappable[FieldType[K, Map[EntryType, C[H]]] :: T, M] =
-    new FromMappable[FieldType[K, Map[EntryType, C[H]]] :: T, M] {
+  implicit def enumeratumTraversableMappableTypeMapEncoder[K <: Symbol, H, T <: HList, C[_], M](implicit
+                                                                                          BMT: BaseMappableType[M],
+                                                                                          K: Witness.Aux[K],
+                                                                                          H: MappableType[M, H],
+                                                                                          T: MapDecoder[T, M],
+                                                                                          CBF: CanBuildFrom[_, H, C[H]]): MapDecoder[FieldType[K, Map[EntryType, C[H]]] :: T, M] =
+    new MapDecoder[FieldType[K, Map[EntryType, C[H]]] :: T, M] {
       def apply(m: M): Option[FieldType[K, Map[EntryType, C[H]]] :: T] =
         for {
           map <- BMT.get(m, K.value.name)
@@ -84,13 +84,13 @@ trait OrientedEnum[EntryType <: EnumEntry] extends OrientedEnumLowerPrioImplicit
         }
     }
 
-  implicit def enumeratumMapMappableTypeToMappable[K <: Symbol, H, T <: HList, C[_], M](implicit
-                                                                      BMT: BaseMappableType[M],
-                                                                      K: Witness.Aux[K],
-                                                                      H: MappableType[M, H],
-                                                                      T: ToMappable[T, M],
-                                                                      IS: IsTraversableOnceAux[C[H], H]): ToMappable[FieldType[K, Map[EntryType, C[H]]] :: T, M] =
-    new ToMappable[FieldType[K, Map[EntryType, C[H]]] :: T, M] {
+  implicit def enumeratumTraversableMappableTypeMapDecoder[K <: Symbol, H, T <: HList, C[_], M](implicit
+                                                                                        BMT: BaseMappableType[M],
+                                                                                        K: Witness.Aux[K],
+                                                                                        H: MappableType[M, H],
+                                                                                        T: MapEncoder[T, M],
+                                                                                        IS: IsTraversableOnceAux[C[H], H]): MapEncoder[FieldType[K, Map[EntryType, C[H]]] :: T, M] =
+    new MapEncoder[FieldType[K, Map[EntryType, C[H]]] :: T, M] {
       override def apply(l: ::[FieldType[K, Map[EntryType, C[H]]], T]): M =
         BMT.put(K.value.name, l.head.foldLeft(BMT.base) { case (acc, (k,v)) => H.put(k.entryName, IS.conversion(v).toList, acc) }, T(l.tail))
     }

@@ -19,7 +19,7 @@ val commonSettings = Seq(
   organization := "com.itsmeijers",
   scalaVersion := "2.11.8",
   version := "0.1.3-SNAPSHOT",
-  crossScalaVersions := Seq("2.10.6", "2.11.8"),
+  crossScalaVersions := Seq("2.11.8"),
   scalacOptions ++= scalacOpts,
   resolvers ++= Seq(Resolver.mavenLocal, Resolver.sonatypeRepo("releases"), Resolver.sonatypeRepo("snapshots")),
   addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.7.1"),
