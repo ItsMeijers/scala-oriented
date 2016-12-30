@@ -52,8 +52,13 @@ object MappableType {
     def from(value: Any): Option[V]
     def to(value: V): Any
 
-    final def xmap[W](f: V => W)(g: W => V) = new ScalaMappableType[W] {
-      override def from(value: Any): Option[W] = self.from(value).map(f)
+    /**
+      * Invariant mapping of V to W and W to V with taking error into account while "decoding" (V => W)
+      * @param f A decoding function with taking error into account
+      * @param g A encoding function
+      */
+    final def xmapF[W](f: V => Option[W])(g: W => V) = new ScalaMappableType[W] {
+      override def from(value: Any): Option[W] = self.from(value).flatMap(f)
       override def to(value: W): Any = self.to(g(value))
     }
 

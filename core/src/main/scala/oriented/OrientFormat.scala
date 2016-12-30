@@ -102,7 +102,6 @@ trait OrientFormat[A] {
 
 object OrientFormat {
 
-
   implicit def derive[A](implicit CT: ClassTag[A], F: FromMappable[A, Map[String, Any]], T: ToMappable[A, Map[String, Any]]) = new OrientFormat[A] {
     def read: OrientRead[A] = readCustom(r => F.apply(r).getOrElse(sys.error("Unable to read row")))
     def name: String = CT.runtimeClass.getSimpleName

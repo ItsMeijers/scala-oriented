@@ -10,10 +10,11 @@ import oriented.maps.MappableType
 import oriented.syntax._
 import oriented.{InMemoryClient, OrientFormat}
 
+import scala.util.Try
+
 class DerivedReadSpec extends Properties("DerivedReadSpec") {
 
-  implicit val dayMapping = MappableType.string.xmap(Day.fromString)(_.str)
-
+  implicit val dayMapping = MappableType.string.xmapF(x => Try(Day.fromString(x)).toOption)(_.str)
 
   property("int") = forAll { m: Wrapped[Int] => roundTrip(m) }
   property("long") = forAll { m: Wrapped[Long] => roundTrip(m) }
