@@ -6,13 +6,13 @@ import enterprisedomain._
 import org.scalacheck.Prop.forAll
 import org.scalacheck.Shapeless._
 import org.scalacheck.{Arbitrary, Gen, Properties}
-import oriented.maps.scalaMap._
+import oriented.maps.MappableType
 import oriented.syntax._
 import oriented.{InMemoryClient, OrientFormat}
 
 class DerivedReadSpec extends Properties("DerivedReadSpec") {
 
-  implicit val dayMapping = string.xmap(Day.fromString)(_.str)
+  implicit val dayMapping = MappableType.string.xmap(Day.fromString)(_.str)
 
 
   property("int") = forAll { m: Wrapped[Int] => roundTrip(m) }

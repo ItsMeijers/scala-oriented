@@ -96,6 +96,8 @@ object FromMappable extends LowerPrioFromMappable {
       }
     }
 
+
+
   implicit def mapTraversableOnceMappable[K <: Symbol, H, T <: HList, M, C[_]](implicit
                                                           BMT: BaseMappableType[M],
                                                           K: Witness.Aux[K],

@@ -6,6 +6,7 @@ import cats.data.Reader
 import com.tinkerpop.blueprints.impls.orient.OrientElement
 import oriented.free.dsl._
 import oriented.free.interpreters.{ReadInterpreter, ReadMapInterpreter}
+import oriented.maps.{FromMappable, ToMappable}
 import oriented.syntax.OrientRead
 
 import scala.reflect.ClassTag
@@ -101,10 +102,8 @@ trait OrientFormat[A] {
 
 object OrientFormat {
 
-  import oriented.maps._
-  import oriented.maps.scalaMap._
 
-  implicit def derive[A](implicit CT: ClassTag[A], F: FromMappable[A, Row], T: ToMappable[A, Row]) = new OrientFormat[A] {
+  implicit def derive[A](implicit CT: ClassTag[A], F: FromMappable[A, Map[String, Any]], T: ToMappable[A, Map[String, Any]]) = new OrientFormat[A] {
     def read: OrientRead[A] = readCustom(r => F.apply(r).getOrElse(sys.error("Unable to read row")))
     def name: String = CT.runtimeClass.getSimpleName
     def properties(model: A): Map[String, Any] = T(model)
