@@ -1,7 +1,7 @@
 package oriented.maps
 
 import java.util.{Date, UUID}
-
+import cats.implicits._
 
 trait BaseMappableType[M] {
   def base: M
@@ -18,12 +18,12 @@ object BaseMappableType {
     override def base: Map[String, Any] = Map.empty[String, Any]
 
     override def get(m: Map[String, Any], key: String): Option[Map[String, Any]] =
-      m.get(key).map(_.asInstanceOf[Map[String, Any]])
+      m.get(key).flatMap(safeCast[Map[String, Any]])
 
     override def getAll(m: Map[String, Any], key: String): Seq[Map[String, Any]] =
       m.get(key)
-        .toSeq
-        .flatMap(_.asInstanceOf[Seq[Map[String, Any]]])
+        .flatMap(safeCast[Seq[Map[String, Any]]])
+        .getOrElse(Seq.empty)
 
     override def put(key: String, value: Map[String, Any], tail: Map[String, Any]): Map[String, Any] = {
       tail + (key -> value)
@@ -61,9 +61,11 @@ object MappableType {
       m.get(key).flatMap(from)
 
     override def getAll(m: Map[String, Any], key: String): Seq[V] =
-      m.get(key)
-        .toSeq
-        .flatMap(x => x.asInstanceOf[Seq[Any]].flatMap(from))
+      (for {
+        x <- m.get(key)
+        seq <- safeCast[Seq[Any]](x)
+        converted <- seq.toList.traverse(from)
+      } yield converted) getOrElse Seq.empty
 
     override def put(key: String, value: V, tail: Map[String, Any]): Map[String, Any] = {
       tail + (key -> to(value))
