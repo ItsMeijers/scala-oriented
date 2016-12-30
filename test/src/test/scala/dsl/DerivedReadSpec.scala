@@ -14,8 +14,6 @@ import scala.util.Try
 
 class DerivedReadSpec extends Properties("DerivedReadSpec") {
 
-  implicit val dayMapping = MappableType.string.xmapF(x => Try(Day.fromString(x)).toOption)(_.str)
-
   property("int") = forAll { m: Wrapped[Int] => roundTrip(m) }
   property("long") = forAll { m: Wrapped[Long] => roundTrip(m) }
   property("bigDecimal") = forAll { m: Wrapped[BigDecimal] => roundTrip(m) }
@@ -24,12 +22,12 @@ class DerivedReadSpec extends Properties("DerivedReadSpec") {
   property("short") = forAll { m: Wrapped[Short] => roundTrip(m) }
   property("date") = forAll { m: Wrapped[Date] => roundTrip(m) }
   property("string") = forAll { m: Wrapped[String] => roundTrip(m) }
-
-  property("xmap") = forAll { m: Wrapped[Day] => roundTrip(m) }
+  property("enumeratum") = forAll { m: Wrapped[WeekDay] => roundTrip(m) }
 
   property("list - primitives") = forAll { m: Wrapped[List[Int]] => roundTrip(m) }
   property("list - products") = forAll { m: Wrapped[List[Wrapped[Int]]] => roundTrip(m) }
   property("list - coproducts") = forAll { m: Wrapped[List[LastReservableTime]] => roundTrip(m) }
+  property("list - enumeratum") = forAll { m: Wrapped[List[WeekDay]] => roundTrip(m) }
 
   property("set - primitives") = forAll { m: Wrapped[Set[Int]] => roundTrip(m) }
   property("set - products") = forAll { m: Wrapped[Set[Wrapped[Int]]] => roundTrip(m) }
@@ -59,6 +57,7 @@ class DerivedReadSpec extends Properties("DerivedReadSpec") {
   property("map - list :: products") = forAll { m: Wrapped[Map[String, List[Wrapped[Int]]]] => roundTrip(m) }
   property("map - seq :: products") = forAll { m: Wrapped[Map[String, Seq[Wrapped[Int]]]] => roundTrip(m) }
   property("map - set :: products") = forAll { m: Wrapped[Map[String, Set[Wrapped[Int]]]] => roundTrip(m) }
+  property("map - vector :: products") = forAll { m: Wrapped[Map[String, Vector[Wrapped[Int]]]] => roundTrip(m) }
   property("map - vector :: products") = forAll { m: Wrapped[Map[String, Vector[Wrapped[Int]]]] => roundTrip(m) }
 
   property("map - list :: coproducts") = forAll { m: Wrapped[Map[String, List[LastReservableTime]]] => roundTrip(m) }

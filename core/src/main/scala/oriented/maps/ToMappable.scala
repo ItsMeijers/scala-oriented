@@ -20,6 +20,8 @@ trait EvenLowerPrioToMappable {
 
 }
 
+
+
 trait LowerPrioToMappable extends EvenLowerPrioToMappable {
 
   implicit def hnilToMappable[M](implicit mbt: BaseMappableType[M])
@@ -51,32 +53,13 @@ trait LowerPrioToMappable extends EvenLowerPrioToMappable {
   }
 }
 
-object ToMappable extends LowerPrioToMappable {
-
-
+trait ToMappablePrio extends LowerPrioToMappable {
   type IsTraversableOnceAux[Repr, A0] = IsTraversableOnce[Repr] { type A = A0 }
-
-  implicit def optionMappable[K <: Symbol, H, T <: HList, M](implicit K: Witness.Aux[K], H: MappableType[M, H], T: ToMappable[T, M]): ToMappable[FieldType[K, Option[H]] :: T, M] =
-    new ToMappable[FieldType[K, Option[H]] :: T, M] {
-      override def apply(l: ::[FieldType[K, Option[H]], T]): M =
-        H.put(K.value.name, l.head, T(l.tail))
-    }
 
   implicit def optionToMappable[K <: Symbol, H, T <: HList, M](implicit BMT: BaseMappableType[M], K: Witness.Aux[K], H: Lazy[ToMappable[H, M]], T: ToMappable[T, M]): ToMappable[FieldType[K, Option[H]] :: T, M] =
     new ToMappable[FieldType[K, Option[H]] :: T, M] {
       override def apply(l: ::[FieldType[K, Option[H]], T]): M =
         BMT.put(K.value.name, l.head.map(H.value.apply), T(l.tail))
-    }
-
-
-  implicit def mapMappable[K <: Symbol, H, T <: HList, M](implicit
-                                                          K: Witness.Aux[K],
-                                                          BMT: BaseMappableType[M],
-                                                          H: MappableType[M, H],
-                                                          T: ToMappable[T, M]): ToMappable[FieldType[K, Map[String, H]] :: T, M] =
-    new ToMappable[FieldType[K, Map[String, H]] :: T, M] {
-      override def apply(l: ::[FieldType[K, Map[String, H]], T]): M =
-        BMT.put(K.value.name, l.head.foldLeft(BMT.base) { case (acc, (k,v)) => H.put(k, v, acc) }, T(l.tail))
     }
 
   implicit def mapToMappable[K <: Symbol, H, T <: HList, M](implicit
@@ -90,14 +73,65 @@ object ToMappable extends LowerPrioToMappable {
     }
 
   implicit def mapTraversableOnceToMappable[K <: Symbol, H, T <: HList, C[_], M](implicit
+                                                                                 K: Witness.Aux[K],
+                                                                                 BMT: BaseMappableType[M],
+                                                                                 H: Lazy[ToMappable[H, M]],
+                                                                                 T: ToMappable[T, M],
+                                                                                 IS: IsTraversableOnceAux[C[H], H]): ToMappable[FieldType[K, Map[String, C[H]]] :: T, M] = new ToMappable[FieldType[K, Map[String, C[H]]] :: T, M] {
+    override def apply(l: ::[FieldType[K, Map[String, C[H]]], T]): M =
+      BMT.put(K.value.name, l.head.foldLeft(BMT.base) { case (acc, (k,v)) => BMT.put(k, IS.conversion(v).toList.map(H.value.apply), acc) }, T(l.tail))
+  }
+
+  def toMappableTraversableOnceToMappable[K <: Symbol, H, T <: HList, C[_], M](implicit
                                                                                K: Witness.Aux[K],
                                                                                BMT: BaseMappableType[M],
                                                                                H: Lazy[ToMappable[H, M]],
                                                                                T: ToMappable[T, M],
-                                                                               IS: IsTraversableOnceAux[C[H], H]): ToMappable[FieldType[K, Map[String, C[H]]] :: T, M] = new ToMappable[FieldType[K, Map[String, C[H]]] :: T, M] {
-    override def apply(l: ::[FieldType[K, Map[String, C[H]]], T]): M =
-      BMT.put(K.value.name, l.head.foldLeft(BMT.base) { case (acc, (k,v)) => BMT.put(k, IS.conversion(v).toList.map(H.value.apply), acc) }, T(l.tail))
+                                                                               IS: IsTraversableOnceAux[C[H], H]): ToMappable[FieldType[K, C[H]] :: T, M] = new ToMappable[FieldType[K, C[H]] :: T, M] {
+    override def apply(l: ::[FieldType[K, C[H]], T]): M =
+      BMT.put(K.value.name, IS.conversion(l.head).toList.map(H.value.apply), T(l.tail))
   }
+
+
+  implicit def seqToMappable[K <: Symbol, H, T <: HList, M](implicit BMT: BaseMappableType[M], K: Witness.Aux[K], H: Lazy[ToMappable[H, M]], T: ToMappable[T, M]): ToMappable[FieldType[K, Seq[H]] :: T, M]  =
+    toMappableTraversableOnceToMappable[K, H, T, Seq, M]
+
+  implicit def setToMappable[K <: Symbol, H, T <: HList, M](implicit BMT: BaseMappableType[M], K: Witness.Aux[K], H: Lazy[ToMappable[H, M]], T: ToMappable[T, M]): ToMappable[FieldType[K, Set[H]] :: T, M]  =
+    toMappableTraversableOnceToMappable[K, H, T, Set, M]
+
+  implicit def listToMappable[K <: Symbol, H, T <: HList, M](implicit BMT: BaseMappableType[M], K: Witness.Aux[K], H: Lazy[ToMappable[H, M]], T: ToMappable[T, M]): ToMappable[FieldType[K, List[H]] :: T, M]  =
+    toMappableTraversableOnceToMappable[K, H, T, List, M]
+
+  implicit def vectorToMappable[K <: Symbol, H, T <: HList, M](implicit BMT: BaseMappableType[M], K: Witness.Aux[K], H: Lazy[ToMappable[H, M]], T: ToMappable[T, M]): ToMappable[FieldType[K, Vector[H]] :: T, M]  =
+    toMappableTraversableOnceToMappable[K, H, T, Vector, M]
+
+
+}
+
+object ToMappable extends ToMappablePrio {
+
+
+
+
+  implicit def optionMappable[K <: Symbol, H, T <: HList, M](implicit K: Witness.Aux[K], H: MappableType[M, H], T: ToMappable[T, M]): ToMappable[FieldType[K, Option[H]] :: T, M] =
+    new ToMappable[FieldType[K, Option[H]] :: T, M] {
+      override def apply(l: ::[FieldType[K, Option[H]], T]): M =
+        H.put(K.value.name, l.head, T(l.tail))
+    }
+
+
+
+
+  implicit def mapMappable[K <: Symbol, H, T <: HList, M](implicit
+                                                          K: Witness.Aux[K],
+                                                          BMT: BaseMappableType[M],
+                                                          H: MappableType[M, H],
+                                                          T: ToMappable[T, M]): ToMappable[FieldType[K, Map[String, H]] :: T, M] =
+    new ToMappable[FieldType[K, Map[String, H]] :: T, M] {
+      override def apply(l: ::[FieldType[K, Map[String, H]], T]): M =
+        BMT.put(K.value.name, l.head.foldLeft(BMT.base) { case (acc, (k,v)) => H.put(k, v, acc) }, T(l.tail))
+    }
+
 
   implicit def mapTraversableOnceMappable[K <: Symbol, H, T <: HList, C[_], M](implicit
                                                             K: Witness.Aux[K],
@@ -133,28 +167,6 @@ object ToMappable extends LowerPrioToMappable {
   implicit def vectorMappable[K <: Symbol, H, T <: HList, M](implicit K: Witness.Aux[K], H: MappableType[M, H], T: ToMappable[T, M]): ToMappable[FieldType[K, Vector[H]] :: T, M]  =
     toMappableTraversableOnceMappable[K, H, T, Vector, M]
 
-  def toMappableTraversableOnceToMappable[K <: Symbol, H, T <: HList, C[_], M](implicit
-    K: Witness.Aux[K],
-    BMT: BaseMappableType[M],
-    H: Lazy[ToMappable[H, M]],
-    T: ToMappable[T, M],
-    IS: IsTraversableOnceAux[C[H], H]): ToMappable[FieldType[K, C[H]] :: T, M] = new ToMappable[FieldType[K, C[H]] :: T, M] {
-    override def apply(l: ::[FieldType[K, C[H]], T]): M =
-      BMT.put(K.value.name, IS.conversion(l.head).toList.map(H.value.apply), T(l.tail))
-  }
-
-
-  implicit def seqToMappable[K <: Symbol, H, T <: HList, M](implicit BMT: BaseMappableType[M], K: Witness.Aux[K], H: Lazy[ToMappable[H, M]], T: ToMappable[T, M]): ToMappable[FieldType[K, Seq[H]] :: T, M]  =
-    toMappableTraversableOnceToMappable[K, H, T, Seq, M]
-
-  implicit def setToMappable[K <: Symbol, H, T <: HList, M](implicit BMT: BaseMappableType[M], K: Witness.Aux[K], H: Lazy[ToMappable[H, M]], T: ToMappable[T, M]): ToMappable[FieldType[K, Set[H]] :: T, M]  =
-    toMappableTraversableOnceToMappable[K, H, T, Set, M]
-
-  implicit def listToMappable[K <: Symbol, H, T <: HList, M](implicit BMT: BaseMappableType[M], K: Witness.Aux[K], H: Lazy[ToMappable[H, M]], T: ToMappable[T, M]): ToMappable[FieldType[K, List[H]] :: T, M]  =
-    toMappableTraversableOnceToMappable[K, H, T, List, M]
-
-  implicit def vectorToMappable[K <: Symbol, H, T <: HList, M](implicit BMT: BaseMappableType[M], K: Witness.Aux[K], H: Lazy[ToMappable[H, M]], T: ToMappable[T, M]): ToMappable[FieldType[K, Vector[H]] :: T, M]  =
-    toMappableTraversableOnceToMappable[K, H, T, Vector, M]
 
 
 

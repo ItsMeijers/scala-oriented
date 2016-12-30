@@ -79,7 +79,7 @@ object MappableType {
       value.fold[Map[String, Any]](Map.empty)(v => Map(key -> to(v))) ++ tail
     }
     override def put(key: String, values: Seq[V], tail: Map[String, Any]): Map[String, Any] = {
-      tail + (key -> values)
+      tail + (key -> values.map(to))
     }
   }
 

@@ -1,5 +1,8 @@
 package enterprisedomain
 
+import enumeratum._
+import oriented.enumeratum.OrientedEnum
+
 case class Wrapped[A](value: A)
 
 
@@ -24,27 +27,24 @@ object LastReservableTime {
 
 }
 
-sealed trait Day {
-  val str: String
-}
 
 case class Time(offset: Long)
 
 case class Range[T](from: T, till: T)
 
-object Day {
+sealed abstract class WeekDay(override val entryName: String) extends EnumEntry
 
-  case object Monday extends Day { val str = "Mon" }
-  case object Tuesday extends Day { val str = "Tue" }
-  case object Wednesday extends Day { val str = "Wed" }
-  case object Thursday extends Day { val str = "Thu" }
-  case object Friday extends Day { val str = "Fri" }
-  case object Saturday extends Day { val str = "Sat" }
-  case object Sunday extends Day { val str = "Sun" }
+object WeekDay extends OrientedEnum[WeekDay] with Enum[WeekDay] {
 
-  val all: List[Day] = List(Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday)
+  val values = findValues
 
-  def fromString(str: String): Day = all.find(_.str == str).getOrElse(sys.error("Unable to parse day"))
+  case object Monday extends WeekDay("Mon")
+  case object Tuesday extends WeekDay("Tue")
+  case object Wednesday extends WeekDay("Wed")
+  case object Thursday extends WeekDay("Thu")
+  case object Friday extends WeekDay("Fri")
+  case object Saturday extends WeekDay("Sat")
+  case object Sunday extends WeekDay("Sun")
 }
 
-final case class OpeningHours(map: Map[Day, Set[Range[Time]]])
+final case class OpeningHours(map: Map[WeekDay, Set[Range[Time]]])

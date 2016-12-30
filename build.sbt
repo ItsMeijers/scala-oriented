@@ -2,6 +2,7 @@ import sbt.addCompilerPlugin
 
 val orientVersion = "2.2.14"
 val catsVersion = "0.7.2"
+val enumeratumVersion = "1.5.4"
 
 val scalacOpts = Seq(
     "-unchecked"
@@ -44,15 +45,26 @@ val core = project.in(file("core"))
         )
       )
 
+val enumeratum = project.in(file("enumeratum"))
+  .dependsOn(core)
+  .settings(commonSettings)
+  .settings(
+    name := "scala-oriented-enumeratum",
+    libraryDependencies ++= Seq(
+      "com.beachape" %% "enumeratum" % enumeratumVersion
+    )
+  )
+
 
 //test domain is there, so shapeless derivation works
 val testDomain = project.in(file("test-domain"))
+  .dependsOn(enumeratum)
   .settings(commonSettings)
   .settings(doNotPublishArtifact)
 
 //separate test module, where you can test all the submodules and only have to make a dependency mess once :-)
 val test = project.in(file("test"))
-    .dependsOn(core, testDomain)
+    .dependsOn(testDomain)
     .settings(commonSettings)
     .settings(doNotPublishArtifact)
     .settings(

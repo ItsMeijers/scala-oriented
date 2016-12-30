@@ -52,19 +52,7 @@ trait LowerPrioFromMappable extends EvenLowerPrioFromMappable {
   }
 }
 
-object FromMappable extends LowerPrioFromMappable {
-
-  implicit def optionMappable[K <: Symbol, H, T <: HList, M](implicit
-    K: Witness.Aux[K],
-    H: MappableType[M, H],
-    T: FromMappable[T, M]): FromMappable[FieldType[K, Option[H]] :: T, M] =
-    new FromMappable[FieldType[K, Option[H]] :: T, M] {
-      override def apply(m: M): Option[::[FieldType[K, Option[H]], T]] = for {
-        tail <- T(m)
-      } yield {
-        field[K](H.get(m, K.value.name)) :: tail
-      }
-    }
+trait FromMappablePrio extends LowerPrioFromMappable {
 
   implicit def optionFromMappable[K <: Symbol, H, T <: HList, M](implicit
                                                                  BMT: BaseMappableType[M],
@@ -78,6 +66,91 @@ object FromMappable extends LowerPrioFromMappable {
         field[K](BMT.get(m, K.value.name).flatMap(H.value.apply)) :: tail
       }
     }
+
+  implicit def mapTraversableOnceFromMappable[K <: Symbol, H, T <: HList, M, C[_]](implicit
+                                                                                   BMT: BaseMappableType[M],
+                                                                                   K: Witness.Aux[K],
+                                                                                   H: Lazy[FromMappable[H, M]],
+                                                                                   T: FromMappable[T, M],
+                                                                                   CBF: CanBuildFrom[_, H, C[H]]): FromMappable[FieldType[K, Map[String, C[H]]] :: T, M] = new FromMappable[FieldType[K, Map[String, C[H]]] :: T, M] {
+    override def apply(m: M): Option[::[FieldType[K, Map[String, C[H]]], T]] = for {
+      map <- BMT.get(m, K.value.name)
+      keys = BMT.keys(map)
+      pairs <- keys.toList.traverse[Option, (String, C[H])] { key =>
+        val members = BMT.getAll(map, key)
+        val results = members.toList.traverse[Option, H](x => H.value.apply(x))
+        results.map { v =>
+          val b = CBF()
+          b ++= v
+          key -> b.result()
+        }
+      }
+      tail <- T(m)
+    } yield {
+      field[K](pairs.toMap) :: tail
+    }
+  }
+
+
+  implicit def mapFromMappable[K <: Symbol, H, T <: HList, M](implicit
+                                                              BMT: BaseMappableType[M],
+                                                              K: Witness.Aux[K],
+                                                              H: Lazy[FromMappable[H, M]],
+                                                              T: FromMappable[T, M]): FromMappable[FieldType[K, Map[String, H]] :: T, M] =
+    new FromMappable[FieldType[K, Map[String, H]] :: T, M] {
+      override def apply(m: M): Option[FieldType[K, Map[String, H]] :: T] = for {
+        map <- BMT.get(m, K.value.name)
+        keys = BMT.keys(map)
+        pairs <- keys.toList.traverse[Option, (String, H)](key => BMT.get(map, key).flatMap(m => H.value(m).map(v => key -> v)))
+        tail <- T(m)
+      } yield {
+        field[K](pairs.toMap) :: tail
+      }
+    }
+
+  def fromMappableTraversableOnceFromMappable[K <: Symbol, H, T <: HList, C[_], M](implicit
+                                                                                   K: Witness.Aux[K],
+                                                                                   H: Lazy[FromMappable[H, M]],
+                                                                                   T: FromMappable[T, M],
+                                                                                   BMT: BaseMappableType[M],
+                                                                                   CBF: CanBuildFrom[_, H, C[H]]): FromMappable[FieldType[K, C[H]] :: T, M] = new FromMappable[FieldType[K, C[H]] :: T, M] {
+    override def apply(m: M): Option[::[FieldType[K, C[H]], T]] = for {
+      tail <- T(m)
+    } yield {
+      val b = CBF()
+      b ++= BMT.getAll(m, K.value.name).flatMap(x => H.value(x))
+
+      field[K](b.result()) :: tail
+    }
+  }
+
+  implicit def seqFromMappable[K <: Symbol, H, T <: HList, M](implicit BMT: BaseMappableType[M], K: Witness.Aux[K], H: Lazy[FromMappable[H, M]], T: FromMappable[T, M]): FromMappable[FieldType[K, Seq[H]] :: T, M] =
+    fromMappableTraversableOnceFromMappable[K, H, T, Seq, M]
+
+  implicit def setFromMappable[K <: Symbol, H, T <: HList, M](implicit BMT: BaseMappableType[M], K: Witness.Aux[K], H: Lazy[FromMappable[H, M]], T: FromMappable[T, M]): FromMappable[FieldType[K, Set[H]] :: T, M] =
+    fromMappableTraversableOnceFromMappable[K, H, T, Set, M]
+
+  implicit def listFromMappable[K <: Symbol, H, T <: HList, M](implicit BMT: BaseMappableType[M], K: Witness.Aux[K], H: Lazy[FromMappable[H, M]], T: FromMappable[T, M]): FromMappable[FieldType[K, List[H]] :: T, M] =
+    fromMappableTraversableOnceFromMappable[K, H, T, List, M]
+
+  implicit def vectorFromMappable[K <: Symbol, H, T <: HList, M](implicit BMT: BaseMappableType[M], K: Witness.Aux[K], H: Lazy[FromMappable[H, M]], T: FromMappable[T, M]): FromMappable[FieldType[K, Vector[H]] :: T, M] =
+    fromMappableTraversableOnceFromMappable[K, H, T, Vector, M]
+}
+
+object FromMappable extends FromMappablePrio {
+
+  implicit def optionMappable[K <: Symbol, H, T <: HList, M](implicit
+    K: Witness.Aux[K],
+    H: MappableType[M, H],
+    T: FromMappable[T, M]): FromMappable[FieldType[K, Option[H]] :: T, M] =
+    new FromMappable[FieldType[K, Option[H]] :: T, M] {
+      override def apply(m: M): Option[::[FieldType[K, Option[H]], T]] = for {
+        tail <- T(m)
+      } yield {
+        field[K](H.get(m, K.value.name)) :: tail
+      }
+    }
+
 
   implicit def mapMappable[K <: Symbol, H, T <: HList, M](implicit
                                                           BMT: BaseMappableType[M],
@@ -117,45 +190,7 @@ object FromMappable extends LowerPrioFromMappable {
     }
   }
 
-  implicit def mapTraversableOnceFromMappable[K <: Symbol, H, T <: HList, M, C[_]](implicit
-                                                                               BMT: BaseMappableType[M],
-                                                                               K: Witness.Aux[K],
-                                                                               H: Lazy[FromMappable[H, M]],
-                                                                               T: FromMappable[T, M],
-                                                                               CBF: CanBuildFrom[_, H, C[H]]): FromMappable[FieldType[K, Map[String, C[H]]] :: T, M] = new FromMappable[FieldType[K, Map[String, C[H]]] :: T, M] {
-    override def apply(m: M): Option[::[FieldType[K, Map[String, C[H]]], T]] = for {
-      map <- BMT.get(m, K.value.name)
-      keys = BMT.keys(map)
-      pairs <- keys.toList.traverse[Option, (String, C[H])] { key =>
-        val members = BMT.getAll(map, key)
-        val results = members.toList.traverse[Option, H](x => H.value.apply(x))
-        results.map { v =>
-          val b = CBF()
-          b ++= v
-          key -> b.result()
-        }
-      }
-      tail <- T(m)
-    } yield {
-      field[K](pairs.toMap) :: tail
-    }
-  }
 
-  implicit def mapFromMappable[K <: Symbol, H, T <: HList, M](implicit
-                                                              BMT: BaseMappableType[M],
-                                                              K: Witness.Aux[K],
-                                                              H: Lazy[FromMappable[H, M]],
-                                                              T: FromMappable[T, M]): FromMappable[FieldType[K, Map[String, H]] :: T, M] =
-    new FromMappable[FieldType[K, Map[String, H]] :: T, M] {
-      override def apply(m: M): Option[FieldType[K, Map[String, H]] :: T] = for {
-        map <- BMT.get(m, K.value.name)
-        keys = BMT.keys(map)
-        pairs <- keys.toList.traverse[Option, (String, H)](key => BMT.get(map, key).flatMap(m => H.value(m).map(v => key -> v)))
-        tail <- T(m)
-      } yield {
-        field[K](pairs.toMap) :: tail
-      }
-    }
 
   def fromMappableTraversableOnceMappable[K <: Symbol, H, T <: HList, C[_], M](implicit
                                                                                K: Witness.Aux[K],
@@ -186,32 +221,6 @@ object FromMappable extends LowerPrioFromMappable {
   implicit def vectorMappable[K <: Symbol, H, T <: HList, M](implicit BMT: BaseMappableType[M], K: Witness.Aux[K], H: MappableType[M, H], T: FromMappable[T, M]): FromMappable[FieldType[K, Vector[H]] :: T, M] =
     fromMappableTraversableOnceMappable[K, H, T, Vector, M]
 
-  def fromMappableTraversableOnceFromMappable[K <: Symbol, H, T <: HList, C[_], M](implicit
-                                                                                            K: Witness.Aux[K],
-                                                                                            H: Lazy[FromMappable[H, M]],
-                                                                                            T: FromMappable[T, M],
-                                                                                            BMT: BaseMappableType[M],
-                                                                                            CBF: CanBuildFrom[_, H, C[H]]): FromMappable[FieldType[K, C[H]] :: T, M] = new FromMappable[FieldType[K, C[H]] :: T, M] {
-    override def apply(m: M): Option[::[FieldType[K, C[H]], T]] = for {
-      tail <- T(m)
-    } yield {
-      val b = CBF()
-      b ++= BMT.getAll(m, K.value.name).flatMap(x => H.value(x))
 
-      field[K](b.result()) :: tail
-    }
-  }
-
-  implicit def seqFromMappable[K <: Symbol, H, T <: HList, M](implicit BMT: BaseMappableType[M], K: Witness.Aux[K], H: Lazy[FromMappable[H, M]], T: FromMappable[T, M]): FromMappable[FieldType[K, Seq[H]] :: T, M] =
-    fromMappableTraversableOnceFromMappable[K, H, T, Seq, M]
-
-  implicit def setFromMappable[K <: Symbol, H, T <: HList, M](implicit BMT: BaseMappableType[M], K: Witness.Aux[K], H: Lazy[FromMappable[H, M]], T: FromMappable[T, M]): FromMappable[FieldType[K, Set[H]] :: T, M] =
-    fromMappableTraversableOnceFromMappable[K, H, T, Set, M]
-
-  implicit def listFromMappable[K <: Symbol, H, T <: HList, M](implicit BMT: BaseMappableType[M], K: Witness.Aux[K], H: Lazy[FromMappable[H, M]], T: FromMappable[T, M]): FromMappable[FieldType[K, List[H]] :: T, M] =
-    fromMappableTraversableOnceFromMappable[K, H, T, List, M]
-
-  implicit def vectorFromMappable[K <: Symbol, H, T <: HList, M](implicit BMT: BaseMappableType[M], K: Witness.Aux[K], H: Lazy[FromMappable[H, M]], T: FromMappable[T, M]): FromMappable[FieldType[K, Vector[H]] :: T, M] =
-    fromMappableTraversableOnceFromMappable[K, H, T, Vector, M]
 
 }
