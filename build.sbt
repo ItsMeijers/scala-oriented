@@ -21,7 +21,7 @@ val commonSettings = Seq(
   version := "0.1.3-SNAPSHOT",
   crossScalaVersions := Seq("2.11.8"),
   scalacOptions ++= scalacOpts,
-  javaOptions in run += "-Xmx8G",
+  javaOptions in Test += "-Xmx512m -XX:MaxDirectMemorySize=512m",
   resolvers ++= Seq(Resolver.mavenLocal, Resolver.sonatypeRepo("releases"), Resolver.sonatypeRepo("snapshots")),
   addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.7.1"),
   addCompilerPlugin("com.milessabin" % "si2712fix-plugin" % "1.2.0" cross CrossVersion.full)

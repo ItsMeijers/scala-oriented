@@ -58,13 +58,11 @@ package object syntax {
        (UnsafeClientInterpreter() or
         UnsafeSqlInterpreter())))
 
-      val result = orientIO.foldMap(unsafeInterpreter)
-
-      if(enableTransactions) graph.commit()
-
-      graph.shutdown()
-
-      result
+      try {
+        orientIO.foldMap(unsafeInterpreter)
+      } finally {
+        graph.shutdown(true, enableTransactions)
+      }
     }
 
     /**
@@ -86,15 +84,15 @@ package object syntax {
        (TryClientInterpreter() or
         TrySqlInterpreter())))
 
-      val result = orientIO.foldMap(tryInterpreter)
+      try {
+        val result = orientIO.foldMap(tryInterpreter)
+        if(result.isFailure && enableTransactions) graph.rollback()
+        else if(enableTransactions) graph.commit()
 
-      if(result.isFailure && enableTransactions)
-        graph.rollback()
-      else if(enableTransactions) graph.commit()
-
-      graph.shutdown()
-
-      result
+        result
+      } finally {
+        graph.shutdown()
+      }
     }
 
     /**
