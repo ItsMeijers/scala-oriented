@@ -72,7 +72,7 @@ val test = project.in(file("test"))
       fork := true,
       libraryDependencies ++= Seq(
         "com.orientechnologies"        % "orientdb-server"   % orientVersion,
-        "org.scalatest"                %% "scalatest"        % "3.0.0",
+        "org.scalatest"                %% "scalatest"        % "3.0.1",
         "org.scalacheck"               %% "scalacheck"       % "1.13.4",
         "com.github.alexarchambault"   %% "scalacheck-shapeless_1.13" % "1.1.4"
       )
