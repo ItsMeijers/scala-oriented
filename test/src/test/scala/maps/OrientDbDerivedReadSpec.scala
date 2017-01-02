@@ -71,8 +71,5 @@ class OrientDbDerivedReadSpec extends Properties("OrientDbDerivedReadSpec") with
 
   property("complex nested domain model should work") = forAll { m: BookingCondition => roundTrip(m) }
 
-
-  implicit val arbUUID = Arbitrary(Gen.uuid)
-
   implicit val arbUUID = Arbitrary(Gen.uuid)
 }
