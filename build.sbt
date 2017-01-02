@@ -70,6 +70,8 @@ val test = project.in(file("test"))
     .settings(doNotPublishArtifact)
     .settings(
       fork := true,
+      testForkedParallel := false,
+      parallelExecution := false,
       libraryDependencies ++= Seq(
         "com.orientechnologies"        % "orientdb-server"   % orientVersion,
         "org.scalatest"                %% "scalatest"        % "3.0.1",
