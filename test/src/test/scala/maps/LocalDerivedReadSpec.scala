@@ -1,18 +1,13 @@
-package dsl
+package maps
 
 import java.util.Date
 
 import enterprisedomain._
 import org.scalacheck.Prop.forAll
+import org.scalacheck._
 import org.scalacheck.Shapeless._
-import org.scalacheck.{Arbitrary, Gen, Properties}
-import oriented.maps.MappableType
-import oriented.syntax._
-import oriented.{InMemoryClient, OrientFormat}
 
-import scala.util.Try
-
-class DerivedReadSpec extends Properties("DerivedReadSpec") {
+class LocalDerivedReadSpec extends Properties("LocalDerivedReadSpec") with LocalReadSpec {
 
   property("int") = forAll { m: Wrapped[Int] => roundTrip(m) }
   property("long") = forAll { m: Wrapped[Long] => roundTrip(m) }
@@ -74,20 +69,8 @@ class DerivedReadSpec extends Properties("DerivedReadSpec") {
   property("coproducts - map :: products") = forAll { m: Wrapped[Tree[Map[String, Wrapped[Int]]]] => roundTrip(m) }
   property("coproducts - map :: coproducts") = forAll { m: Wrapped[Tree[Map[String, LastReservableTime]]] => roundTrip(m) }
 
-  implicit val orientClient = InMemoryClient("DerivedReadSpec")
+  property("complex nested domain model should work") = forAll { m: BookingCondition => roundTrip(m) }
 
-  def roundTrip[A](value: A)(implicit OF: OrientFormat[A]): Boolean = {
-    val prg = for {
-      vertex <- orientClient.addVertex(value)
-      res <- sql"SELECT FROM ${vertex.orientElement.getIdentity}"
-        .vertex[A]
-        .unique
-    } yield res
-
-    prg.runGraphUnsafe(false).element == value
-  }
 
   implicit val arbUUID = Arbitrary(Gen.uuid)
 }
-
-

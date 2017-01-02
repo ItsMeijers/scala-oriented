@@ -18,10 +18,8 @@ object ReadInterpreter extends (ReadDSL ~> Reader[OrientElement, ?]) {
     fa match {
       case Read(a)                    => a
       case ReadCustom(f)  => f(o.getProperties.asScala.toMap)
-      case ReadEmbedded(fieldName, of) =>
-        of.readerMap.run(o.getProperty[Map[String, Any]](fieldName))
-      case ReadList(fieldName, of)    =>
-        o.getProperty[List[Map[String, Any]]](fieldName).map(of.readerMap.run)
+      case ReadEmbedded(fieldName, of) => of.readerMap.run(o.getProperty[Map[String, Any]](fieldName))
+      case ReadList(fieldName, of)    => o.getProperty[List[Map[String, Any]]](fieldName).map(of.readerMap.run)
       case ReadListOpt(fieldName, of) => Try(o.getProperty[List[Map[String, Any]]](fieldName).map(of.readerMap.run)).toOption
       case ReadBoolean(fieldName)     => o.getProperty[Boolean](fieldName)
       case ReadBooleanOpt(fieldName)  => Try(o.getProperty[Boolean](fieldName)).toOption
