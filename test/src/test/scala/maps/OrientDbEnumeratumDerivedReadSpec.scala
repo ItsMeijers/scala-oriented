@@ -5,7 +5,7 @@ import org.scalacheck.Prop.forAll
 import org.scalacheck.Properties
 import org.scalacheck.Shapeless._
 
-class LocalEnumeratumDerivedReadSpec extends Properties("LocalEnumeratumDerivedReadSpec") with LocalReadSpec {
+class OrientDbEnumeratumDerivedReadSpec extends Properties("OrientDbEnumeratumDerivedReadSpec") with OrientDbReadSpec {
 
   property("product with enumeratum type") = forAll { m: Wrapped[Day] => roundTrip(m) }
   property("seq with enumeratum type") = forAll { m: Wrapped[Seq[Day]] => roundTrip(m) }
