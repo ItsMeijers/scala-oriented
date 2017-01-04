@@ -1,5 +1,7 @@
 import sbt.addCompilerPlugin
 
+
+val libVersion = "0.1.4-SNAPSHOT"
 val orientVersion = "2.2.14"
 val catsVersion = "0.7.2"
 val enumeratumVersion = "1.5.4"
@@ -15,11 +17,9 @@ val scalacOpts = Seq(
 
 
 val commonSettings = Seq(
-  version := "0.1.0",
   organization := "com.itsmeijers",
   scalaVersion := "2.11.8",
-  version := "0.1.3-SNAPSHOT",
-  crossScalaVersions := Seq("2.11.8"),
+  version := libVersion,
   scalacOptions ++= scalacOpts,
   javaOptions in Test ++= Seq("-Xmx512m","-XX:MaxDirectMemorySize=512m"),
   resolvers ++= Seq(Resolver.mavenLocal, Resolver.sonatypeRepo("releases"), Resolver.sonatypeRepo("snapshots")),
@@ -27,28 +27,40 @@ val commonSettings = Seq(
   addCompilerPlugin("com.milessabin" % "si2712fix-plugin" % "1.2.0" cross CrossVersion.full)
 )
 
-lazy val doNotPublishArtifact = Seq(
-  publishArtifact := false,
-  publishArtifact in (Compile, packageDoc) := false,
-  publishArtifact in (Compile, packageSrc) := false,
-  publishArtifact in (Compile, packageBin) := false
+lazy val doPublish = Seq(
+  credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"),
+  publishTo := {
+    if (isSnapshot.value) {
+      Some("snapshots" at "http://artifactory.lunatech.com/artifactory/snapshots-public")
+    } else {
+      Some("releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2")
+    }
+  }
+)
+
+lazy val doNotPublish = Seq(
+  publish := (),
+  publishLocal := (),
+  publishArtifact := false
 )
 
 
 val core = project.in(file("core"))
     .settings(commonSettings)
-      .settings(
-        name := "scala-oriented-core",
-        libraryDependencies ++= Seq(
-          "com.orientechnologies"        % "orientdb-graphdb"  % orientVersion,
-          "org.typelevel"                %% "cats"             % catsVersion,
-          "com.chuusai"                  %% "shapeless"        % "2.3.2"
-        )
+    .settings(doPublish)
+    .settings(
+      name := "scala-oriented-core",
+      libraryDependencies ++= Seq(
+        "com.orientechnologies"        % "orientdb-graphdb"  % orientVersion,
+        "org.typelevel"                %% "cats"             % catsVersion,
+        "com.chuusai"                  %% "shapeless"        % "2.3.2"
       )
+    )
 
 val enumeratum = project.in(file("enumeratum"))
   .dependsOn(core)
   .settings(commonSettings)
+  .settings(doPublish)
   .settings(
     name := "scala-oriented-enumeratum",
     libraryDependencies ++= Seq(
@@ -61,13 +73,13 @@ val enumeratum = project.in(file("enumeratum"))
 val testDomain = project.in(file("test-domain"))
   .dependsOn(enumeratum)
   .settings(commonSettings)
-  .settings(doNotPublishArtifact)
+  .settings(doNotPublish)
 
 //separate test module, where you can test all the submodules and only have to make a dependency mess once :-)
 val test = project.in(file("test"))
     .dependsOn(testDomain)
     .settings(commonSettings)
-    .settings(doNotPublishArtifact)
+    .settings(doNotPublish)
     .settings(
       fork := true,
       testForkedParallel := false,
@@ -80,3 +92,9 @@ val test = project.in(file("test"))
       )
     )
 
+
+lazy val root = project.in(file("."))
+  .settings(name := "root")
+  .settings(commonSettings)
+  .settings(doNotPublish)
+  .aggregate(core, enumeratum)

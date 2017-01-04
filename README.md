@@ -53,13 +53,13 @@ implicit val client: OrientClient = InMemoryClient(db = "TestDB")
 
 ### OrientFormat Typeclass
 
-For now, each vertex and edge needs to have its own `OrientFormat` instance (I hope to provide automatic derivation in the very near future), that needs to be implicitly in scope. The typeclass instances provide the needed information to read/write case classes to/from OrientDB.
+For now, each vertex and edge needs to have its own `OrientFormat` instance, that needs to be implicitly in scope. The typeclass instances provide the needed information to read/write case classes to/from OrientDB.
 
 ```scala
 implicit val userFormat: OrientFormat[User] = new OrientFormat[User] {
   def name: String = "User"
 
-  def properties(user: User): Map[String, Any] = 
+  def properties(user: User): Map[String, Any] =
     Map("name" -> user.name, "description" -> user.description)
 
   def read: OrientRead[User] =
@@ -72,7 +72,7 @@ implicit val userFormat: OrientFormat[User] = new OrientFormat[User] {
 implicit val tweetFormat: OrientFormat[Tweet] = new OrientFormat[Tweet] {
   def name: String = "Tweet"
 
-  def properties(tweet: Tweet): Map[String, Any] = 
+  def properties(tweet: Tweet): Map[String, Any] =
     Map("content" -> tweet.content, "postDate" -> tweet.postDate)
 
   def read: OrientRead[Tweet] =
@@ -97,6 +97,12 @@ implicit val tweetsFormat: OrientFormat[Tweets.type] = new OrientFormat[Tweets.t
 
   def read: OrientRead[Tweets.type] = read(Tweets)
 }
+
+### Deriving orient format
+
+It's possible to deri
+
+
 ```
 
 As can be seen in the examples, the name represents the name of the Vertex or Edge. Properties is a function from the model to a Map where the keys are the fieldnames of the class and the values are the corresponding value of the model. Read needs an `OrientRead` instance of the model. An `OrientRead` can be constructed using the read functions, where each supported type in OrientDB has a read function. The `read` function can be used for objects or fieldless case classes, to lift the value into `OrientRead`. Each read function returns an `OrientRead`, that can be sequenced together to the model (using map, flatMap or for-comprehension). These format instances are much boilerplate, and will be changed soon into automatic derivation.
@@ -336,3 +342,21 @@ _TODO_
 ## Contributing
 
 _TODO_
+
+## Publishing
+
+For snapshot publishing at Lunatech
+
+1. Get a artifactory Lunatech account
+2. Set the version to something ending with `-SNAPSHOT`
+3. Create a `~/.ivy2/.credentials` file
+4. Edit the file
+
+```
+realm=Artifactory Realm
+host=artifactory.lunatech.com
+user=<username>
+password=<password>
+```
+
+5 Run `sbt publish`
