@@ -1,10 +1,9 @@
 import sbt.addCompilerPlugin
 
 
-val libVersion = "0.1.4-SNAPSHOT"
+val libVersion = "0.1.5-SNAPSHOT"
 val orientVersion = "2.2.14"
 val catsVersion = "0.7.2"
-val enumeratumVersion = "1.5.4"
 
 val scalacOpts = Seq(
     "-unchecked"
@@ -28,6 +27,7 @@ val commonSettings = Seq(
 )
 
 lazy val doPublish = Seq(
+  publishMavenStyle := true,
   credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"),
   publishTo := {
     if (isSnapshot.value) {
@@ -53,31 +53,19 @@ val core = project.in(file("core"))
       libraryDependencies ++= Seq(
         "com.orientechnologies"        % "orientdb-graphdb"  % orientVersion,
         "org.typelevel"                %% "cats"             % catsVersion,
-        "com.chuusai"                  %% "shapeless"        % "2.3.2"
+        "com.chuusai"                  %% "shapeless"        % "2.3.2",
+        "org.julienrf"                 %% "enum"             % "3.0"
       )
     )
 
-val enumeratum = project.in(file("enumeratum"))
-  .dependsOn(core)
-  .settings(commonSettings)
-  .settings(doPublish)
-  .settings(
-    name := "scala-oriented-enumeratum",
-    libraryDependencies ++= Seq(
-      "com.beachape" %% "enumeratum" % enumeratumVersion
-    )
-  )
-
-
 //test domain is there, so shapeless derivation works
 val testDomain = project.in(file("test-domain"))
-  .dependsOn(enumeratum)
   .settings(commonSettings)
   .settings(doNotPublish)
 
 //separate test module, where you can test all the submodules and only have to make a dependency mess once :-)
 val test = project.in(file("test"))
-    .dependsOn(testDomain)
+    .dependsOn(core, testDomain)
     .settings(commonSettings)
     .settings(doNotPublish)
     .settings(
@@ -97,4 +85,4 @@ lazy val root = project.in(file("."))
   .settings(name := "root")
   .settings(commonSettings)
   .settings(doNotPublish)
-  .aggregate(core, enumeratum)
+  .aggregate(core, test)

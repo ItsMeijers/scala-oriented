@@ -1,9 +1,11 @@
 package oriented.maps
 
+import cats.implicits._
+import enum.Enum
 import shapeless._
-import shapeless.labelled.FieldType
+import shapeless.labelled.{FieldType, field}
 
-import scala.collection.generic.IsTraversableOnce
+import scala.collection.generic.{CanBuildFrom, IsTraversableOnce}
 
 trait MapEncoder[L, M] {
   def apply(l: L): M
@@ -20,6 +22,18 @@ trait LowestPrioMapEncoder {
     override def apply(l: FieldType[K, H] :: T): M =
       bmt.put(wit.value.name, H.value(l.head), T(l.tail))
   }
+
+  implicit def enumTraversableMapDecoderMapEncoder[K <: Symbol, E, H, T <: HList, C[_], M](implicit
+                                                                                              BMT: BaseMappableType[M],
+                                                                                              K: Witness.Aux[K],
+                                                                                              E: Enum[E],
+                                                                                              H: Lazy[MapEncoder[H, M]],
+                                                                                              T: MapEncoder[T, M],
+                                                                                              IS: IsTraversableOnceAux[C[H], H]): MapEncoder[FieldType[K, Map[E, C[H]]] :: T, M] =
+    new MapEncoder[FieldType[K, Map[E, C[H]]] :: T, M] {
+      override def apply(l: ::[FieldType[K, Map[E, C[H]]], T]): M =
+        BMT.put(K.value.name, l.head.foldLeft(BMT.base) { case (acc, (k,v)) => BMT.put(E.encode(k), IS.conversion(v).toList.map(H.value.apply), acc) }, T(l.tail))
+    }
 
 }
 
@@ -183,7 +197,17 @@ trait MappableTypeMapEncoders extends MapEncoderMapEncoders {
   implicit def vectorMappableTypeMapEncoder[K <: Symbol, H, T <: HList, M](implicit K: Witness.Aux[K], H: MappableType[M, H], T: MapEncoder[T, M]): MapEncoder[FieldType[K, Vector[H]] :: T, M]  =
     traversableMappableTypeMapEncoder[K, H, T, Vector, M]
 
-
+  implicit def enumTraversableMappableTypeMapEncoder[K <: Symbol, E, H, T <: HList, C[_], M](implicit
+                                                                                             BMT: BaseMappableType[M],
+                                                                                             K: Witness.Aux[K],
+                                                                                             E: Enum[E],
+                                                                                             H: MappableType[M, H],
+                                                                                             T: MapEncoder[T, M],
+                                                                                             IS: IsTraversableOnceAux[C[H], H]): MapEncoder[FieldType[K, Map[E, C[H]]] :: T, M] =
+    new MapEncoder[FieldType[K, Map[E, C[H]]] :: T, M] {
+      override def apply(l: ::[FieldType[K, Map[E, C[H]]], T]): M =
+        BMT.put(K.value.name, l.head.foldLeft(BMT.base) { case (acc, (k,v)) => H.put(E.encode(k), IS.conversion(v).toList, acc) }, T(l.tail))
+    }
 }
 
 object MapEncoder extends MappableTypeMapEncoders

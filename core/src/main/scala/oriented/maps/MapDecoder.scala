@@ -6,6 +6,8 @@ import shapeless.labelled.{FieldType, field}
 
 import scala.collection.generic.CanBuildFrom
 
+import enum._
+
 trait MapDecoder[A, M] {
   def apply(m: M): Option[A]
 }
@@ -23,6 +25,35 @@ trait LowestPrioMapDecoder {
       t <- T(m)
     } yield field[K](h) :: t
   }
+
+  implicit def enumTraversableMapDecoderMapDecoder[K <: Symbol, E, H, T <: HList, C[_], M](implicit
+                                                                                              BMT: BaseMappableType[M],
+                                                                                              E: Enum[E],
+                                                                                              K: Witness.Aux[K],
+                                                                                              H: Lazy[MapDecoder[H, M]],
+                                                                                              T: MapDecoder[T, M],
+                                                                                              CBF: CanBuildFrom[_, H, C[H]]): MapDecoder[FieldType[K, Map[E, C[H]]] :: T, M] =
+    new MapDecoder[FieldType[K, Map[E, C[H]]] :: T, M] {
+      def apply(m: M): Option[FieldType[K, Map[E, C[H]]] :: T] =
+        for {
+          map <- BMT.get(m, K.value.name)
+          keys = BMT.keys(map)
+          pairs <- keys.toList.traverse[Option, (E, C[H])] { key =>
+            for {
+              entryType <- E.decodeOpt(key)
+              rawEntries = BMT.getAll(map, key)
+              entries <- rawEntries.toList.traverse(H.value.apply)
+            } yield {
+              val b = CBF()
+              b ++= entries
+              entryType -> b.result()
+            }
+          }
+          tail <- T(m)
+        } yield {
+          field[K](pairs.toMap) :: tail
+        }
+    }
 }
 
 /**
@@ -146,6 +177,36 @@ trait MapDecoderMapDecoders extends ShapelessMapDecoder {
 
   implicit def vectorMapDecoderMapDecoder[K <: Symbol, H, T <: HList, M](implicit BMT: BaseMappableType[M], K: Witness.Aux[K], H: Lazy[MapDecoder[H, M]], T: MapDecoder[T, M]): MapDecoder[FieldType[K, Vector[H]] :: T, M] =
     traversableMapDecoderMapDecoder[K, H, T, Vector, M]
+
+
+
+  implicit def enumTraversableMappableTypeMapDecoder[K <: Symbol, E, H, T <: HList, C[_], M](implicit
+                                                                                             BMT: BaseMappableType[M],
+                                                                                             K: Witness.Aux[K],
+                                                                                             E: Enum[E],
+                                                                                             H: MappableType[M, H],
+                                                                                             T: MapDecoder[T, M],
+                                                                                             CBF: CanBuildFrom[_, H, C[H]]): MapDecoder[FieldType[K, Map[E, C[H]]] :: T, M] =
+    new MapDecoder[FieldType[K, Map[E, C[H]]] :: T, M] {
+      def apply(m: M): Option[FieldType[K, Map[E, C[H]]] :: T] =
+        for {
+          map <- BMT.get(m, K.value.name)
+          keys = BMT.keys(map)
+          pairs <- keys.toList.traverse[Option, (E, C[H])] { key =>
+            for {
+              entryType <- E.decodeOpt(key)
+            } yield {
+              val entries = H.getAll(map, key)
+              val b = CBF()
+              b ++= entries
+              entryType -> b.result()
+            }
+          }
+          tail <- T(m)
+        } yield {
+          field[K](pairs.toMap) :: tail
+        }
+    }
 }
 
 /**

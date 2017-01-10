@@ -1,8 +1,5 @@
 package enterprisedomain
 
-import enumeratum._
-import oriented.enumeratum.OrientedEnum
-
 case class Wrapped[A](value: A)
 
 
@@ -32,18 +29,16 @@ object LastReservableTime {
 final case class Range[T](from: T, till: T)
 final case class OpeningHours(map: Map[Day, Set[Range[Time]]])
 
-sealed abstract class Day(override val entryName: String) extends EnumEntry
+sealed trait Day
 
-object Day extends OrientedEnum[Day] with Enum[Day] {
-  val values = findValues
-
-  case object Monday    extends Day("Mon")
-  case object Tuesday   extends Day("Tue")
-  case object Wednesday extends Day("Wed")
-  case object Thursday  extends Day("Thu")
-  case object Friday    extends Day("Fri")
-  case object Saturday  extends Day("Sat")
-  case object Sunday    extends Day("Sun")
+object Day {
+  case object Monday    extends Day
+  case object Tuesday   extends Day
+  case object Wednesday extends Day
+  case object Thursday  extends Day
+  case object Friday    extends Day
+  case object Saturday  extends Day
+  case object Sunday    extends Day
 }
 
 case class Time(minute: Int) extends AnyVal

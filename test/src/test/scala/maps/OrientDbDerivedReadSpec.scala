@@ -69,6 +69,14 @@ class OrientDbDerivedReadSpec extends Properties("OrientDbDerivedReadSpec") with
   property("coproducts - map :: products") = forAll { m: Wrapped[Tree[Map[String, Wrapped[Int]]]] => roundTrip(m) }
   property("coproducts - map :: coproducts") = forAll { m: Wrapped[Tree[Map[String, LastReservableTime]]] => roundTrip(m) }
 
+  property("product with enum type") = forAll { m: Wrapped[Day] => roundTrip(m) }
+  property("seq with enum type") = forAll { m: Wrapped[Seq[Day]] => roundTrip(m) }
+  property("set with enum type") = forAll { m: Wrapped[Set[Day]] => roundTrip(m) }
+  property("list with enum type") = forAll { m: Wrapped[List[Day]] => roundTrip(m) }
+  property("vector with enum type") = forAll { m: Wrapped[Vector[Day] ] => roundTrip(m) }
+  property("map - enum key :: sequence of primitive types") = forAll { m: Wrapped[Map[Day, Seq[Int]]] => roundTrip(m) }
+  property("map - enum key :: sequence of product types") = forAll { m: OpeningHours => roundTrip(m) }
+
   property("complex nested domain model should work") = forAll { m: BookingCondition => roundTrip(m) }
 
   implicit val arbUUID = Arbitrary(Gen.uuid)

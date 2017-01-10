@@ -2,6 +2,7 @@ package oriented.maps
 
 import java.util.{Date, UUID}
 import cats.implicits._
+import enum.Enum
 
 trait BaseMappableType[M] {
   def base: M
@@ -98,5 +99,8 @@ object MappableType {
   implicit val string: ScalaMappableType[String] = createMapping(safeCast[String], identity)
   implicit val date: ScalaMappableType[Date] = createMapping(safeCast[Date], identity)
   implicit val uuid: ScalaMappableType[UUID] = createMapping(safeCast[UUID], identity)
+
+  implicit def enum[E](implicit E: Enum[E]): MappableType[Map[String, Any], E] =
+    MappableType.string.xmapF(x => E.decodeOpt(x))(E.encode)
 
 }
