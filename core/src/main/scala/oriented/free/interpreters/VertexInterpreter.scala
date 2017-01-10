@@ -1,7 +1,6 @@
 package oriented.free.interpreters
 
-import scala.collection.JavaConverters._
-import collection.JavaConversions._
+import collection.JavaConverters._
 import cats.{Id, ~>}
 import cats.data.EitherT
 import com.tinkerpop.blueprints.impls.orient.{OrientEdge, OrientVertex}
@@ -30,8 +29,7 @@ sealed trait VertexInterpreter[M[_]] extends (VertexDSL ~> M) {
     */
   def interpretDSL[A](fa: VertexDSL[A]): A = fa match {
     case AddEdgeToVertex(vertex, edgeModel, inVertex, clusterName, of) =>
-      val elements = mapAsJavaMap(of.properties(edgeModel))
-        .asInstanceOf[java.util.Map[java.lang.String, java.lang.Object]]
+      val elements = of.properties(edgeModel).asJava
 
       val orientEdge = clusterName.map { cn =>
         vertex.orientElement.addEdge(
@@ -75,9 +73,9 @@ sealed trait VertexInterpreter[M[_]] extends (VertexDSL ~> M) {
           Vertex(orientFormatVertex.reader.run(orientVertex), orientVertex)
         }.toList
     case UpdateVertex(newModel, orientVertex, orientFormat) =>
-      orientFormat.properties(newModel).foreach { case (key, value) =>
-        orientVertex.setProperty(key, value)
-      }
+
+      orientVertex.setProperties(orientFormat.properties(newModel).asJava)
+
       Vertex(newModel, orientVertex)
   }
 }

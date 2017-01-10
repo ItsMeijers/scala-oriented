@@ -9,7 +9,7 @@ import oriented.syntax._
 /**
   * Test spec for Read DSL
   */
-class ReadSpec extends FlatSpec with Matchers with BeforeAndAfter {
+class ManualReadSpec extends FlatSpec with Matchers with BeforeAndAfter {
 
   object Test
 
@@ -33,7 +33,7 @@ class ReadSpec extends FlatSpec with Matchers with BeforeAndAfter {
     override def read: OrientRead[BigDecTest] = readBigDecimal("bigDecimal").map(BigDecTest.apply)
   }
 
-  implicit val orientClient = InMemoryClient("test")
+  implicit val orientClient = InMemoryClient("ManualReadSpec")
 
   "Read constructor" should "save edge with no fields" in {
     val edge = orientClient.addVertex(Test)

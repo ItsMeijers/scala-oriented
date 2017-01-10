@@ -1,14 +1,11 @@
-name := "scala-oriented"
+import sbt.addCompilerPlugin
 
-organization := "com.itsmeijers"
 
-version := "0.1.3-SNAPSHOT"
+val libVersion = "0.1.5-SNAPSHOT"
+val orientVersion = "2.2.14"
+val catsVersion = "0.7.2"
 
-scalaVersion := "2.11.8"
-
-crossScalaVersions := Seq("2.10.6", "2.11.8")
-
-scalacOptions := Seq(
+val scalacOpts = Seq(
     "-unchecked"
   , "-deprecation"
   , "-encoding"
@@ -18,26 +15,74 @@ scalacOptions := Seq(
   , "-language:higherKinds")
 
 
-resolvers ++= Seq(
-    Resolver.mavenLocal
-  , Resolver.sonatypeRepo("releases")
-  , Resolver.sonatypeRepo("snapshots")
+val commonSettings = Seq(
+  organization := "com.itsmeijers",
+  scalaVersion := "2.11.8",
+  version := libVersion,
+  scalacOptions ++= scalacOpts,
+  javaOptions in Test ++= Seq("-Xmx512m","-XX:MaxDirectMemorySize=512m"),
+  resolvers ++= Seq(Resolver.mavenLocal, Resolver.sonatypeRepo("releases"), Resolver.sonatypeRepo("snapshots")),
+  addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.7.1"),
+  addCompilerPlugin("com.milessabin" % "si2712fix-plugin" % "1.2.0" cross CrossVersion.full)
 )
 
-libraryDependencies ++= Seq(
-  // OrientDB Java API
-    "com.orientechnologies"        % "orientdb-graphdb"  % "2.2.7"
-  , "com.orientechnologies"        % "orientdb-server"   % "2.2.7" // For embedding OrientDB
-  // Scala Libraries
-  , "org.scalatest"                %% "scalatest"        % "3.0.0"  % "test"
-  , "org.scalacheck"               %% "scalacheck"       % "1.13.2" % "test"
-  , "org.typelevel"                %% "cats"             % "0.7.2"
-  , "org.spire-math"               %% "kind-projector"   % "0.7.1"
-  , "com.milessabin"               %% "si2712fix-plugin" % "1.2.0" cross CrossVersion.full
-  , "com.chuusai"                  %% "shapeless"        % "2.3.2"
+lazy val doPublish = Seq(
+  publishMavenStyle := true,
+  credentials += Credentials(Path.userHome / ".ivy2" / ".credentials"),
+  publishTo := {
+    if (isSnapshot.value) {
+      Some("snapshots" at "http://artifactory.lunatech.com/artifactory/snapshots-public")
+    } else {
+      Some("releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2")
+    }
+  }
 )
 
-addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.7.1")
-addCompilerPlugin("com.milessabin" % "si2712fix-plugin" % "1.2.0" cross CrossVersion.full)
+lazy val doNotPublish = Seq(
+  publish := (),
+  publishLocal := (),
+  publishArtifact := false
+)
 
-fork := true
+
+val core = project.in(file("core"))
+    .settings(commonSettings)
+    .settings(doPublish)
+    .settings(
+      name := "scala-oriented-core",
+      libraryDependencies ++= Seq(
+        "com.orientechnologies"        % "orientdb-graphdb"  % orientVersion,
+        "org.typelevel"                %% "cats"             % catsVersion,
+        "com.chuusai"                  %% "shapeless"        % "2.3.2",
+        "org.julienrf"                 %% "enum"             % "3.0"
+      )
+    )
+
+//test domain is there, so shapeless derivation works
+val testDomain = project.in(file("test-domain"))
+  .settings(commonSettings)
+  .settings(doNotPublish)
+
+//separate test module, where you can test all the submodules and only have to make a dependency mess once :-)
+val test = project.in(file("test"))
+    .dependsOn(core, testDomain)
+    .settings(commonSettings)
+    .settings(doNotPublish)
+    .settings(
+      fork := true,
+      testForkedParallel := false,
+      parallelExecution := false,
+      libraryDependencies ++= Seq(
+        "com.orientechnologies"        % "orientdb-server"   % orientVersion,
+        "org.scalatest"                %% "scalatest"        % "3.0.1",
+        "org.scalacheck"               %% "scalacheck"       % "1.13.4",
+        "com.github.alexarchambault"   %% "scalacheck-shapeless_1.13" % "1.1.4"
+      )
+    )
+
+
+lazy val root = project.in(file("."))
+  .settings(name := "root")
+  .settings(commonSettings)
+  .settings(doNotPublish)
+  .aggregate(core, test)

@@ -3,12 +3,12 @@ package oriented.free.interpreters
 import java.util.Date
 
 import cats.data.Reader
-import oriented.free.dsl._
-import cats.{Id, ~>}
+import cats.~>
 import com.tinkerpop.blueprints.impls.orient.OrientElement
+import oriented.free.dsl._
 
+import scala.collection.JavaConverters._
 import scala.util.Try
-
 
 /**
   * TODO
@@ -17,7 +17,8 @@ object ReadInterpreter extends (ReadDSL ~> Reader[OrientElement, ?]) {
   override def apply[A](fa: ReadDSL[A]): Reader[OrientElement, A] = Reader((o: OrientElement) =>
     fa match {
       case Read(a)                    => a
-      case ReadEmbedded(fieldName, of) => of.readerMap(o.getProperty[Map[String, Any]](fieldName))
+      case ReadCustom(f)  => f(o.getProperties.asScala.toMap)
+      case ReadEmbedded(fieldName, of) => of.readerMap.run(o.getProperty[Map[String, Any]](fieldName))
       case ReadList(fieldName, of)    => o.getProperty[List[Map[String, Any]]](fieldName).map(of.readerMap.run)
       case ReadListOpt(fieldName, of) => Try(o.getProperty[List[Map[String, Any]]](fieldName).map(of.readerMap.run)).toOption
       case ReadBoolean(fieldName)     => o.getProperty[Boolean](fieldName)
@@ -48,6 +49,7 @@ object ReadInterpreter extends (ReadDSL ~> Reader[OrientElement, ?]) {
 object ReadMapInterpreter extends (ReadDSL ~> Reader[Map[String, Any], ?]) {
   override def apply[A](fa: ReadDSL[A]): Reader[Map[String, Any], A] = Reader(map => fa match {
     case Read(a) => a
+    case ReadCustom(f) => f(map)
     case ReadEmbedded(fieldName, orientFormat) => orientFormat.readerMap(map(fieldName).asInstanceOf[Map[String, Any]])
     case ReadList(fieldName, orientFormat)     => map(fieldName).asInstanceOf[List[Map[String, Any]]].map(orientFormat.readerMap.run)
     case ReadListOpt(fieldName, orientFormat)  => map.get(fieldName).map(_.asInstanceOf[List[Map[String, Any]]].map(orientFormat.readerMap.run))

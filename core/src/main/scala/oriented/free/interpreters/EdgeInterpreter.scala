@@ -6,6 +6,7 @@ import com.tinkerpop.blueprints.Direction
 import oriented._
 import oriented.free.dsl.{EdgeDSL, GetInVertex, GetOutVertex, UpdateEdge}
 
+import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -29,9 +30,9 @@ sealed trait EdgeInterpreter[G[_]] extends (EdgeDSL ~> G) {
     case GetInVertex(edge, orientFormat)  => getVertex(edge, Direction.IN, orientFormat)
     case GetOutVertex(edge, orientFormat) => getVertex(edge, Direction.OUT, orientFormat)
     case UpdateEdge(newModel, orientEdge, orientFormat) =>
-      orientFormat.properties(newModel).foreach { case (key, value) =>
-        orientEdge.setProperty(key, value)
-      }
+
+      orientEdge.setProperties(orientFormat.properties(newModel).asJava)
+
       Edge(newModel, orientEdge)
   }
 

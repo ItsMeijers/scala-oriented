@@ -16,6 +16,8 @@ sealed trait ReadDSL[A]
   */
 case class Read[A](a: A) extends ReadDSL[A]
 
+case class ReadCustom[A](f: Map[String, Any] => A) extends ReadDSL[A]
+
 case class ReadEmbedded[T](fieldName: String, orientFormat: OrientFormat[T]) extends ReadDSL[T]
 
 case class ReadList[T](fieldName: String, orientFormat: OrientFormat[T]) extends ReadDSL[List[T]]
@@ -64,6 +66,9 @@ class Reads[F[_]](implicit inject: Inject[ReadDSL, F]) {
 
   def read[R](r: R): Free[F, R] =
     Free.inject[ReadDSL, F](Read(r))
+
+  def readCustom[R](r: Map[String, Any] => R): Free[F, R] =
+    Free.inject[ReadDSL, F](ReadCustom(r))
 
   def readEmbedded[T](fieldName: String, orientFormat: OrientFormat[T]): Free[F, T] =
     Free.inject[ReadDSL, F](ReadEmbedded(fieldName, orientFormat))

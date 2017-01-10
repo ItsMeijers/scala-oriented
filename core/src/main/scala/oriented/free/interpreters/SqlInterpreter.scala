@@ -1,6 +1,6 @@
 package oriented.free.interpreters
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import cats.data.{EitherT, Reader}
 import cats.{Id, ~>}
 import cats.syntax.list._
@@ -23,6 +23,7 @@ sealed trait SqlInterpreter[G[_]] extends (SqlDSL ~> G) {
     graph
     .command(new OCommandSQL(query))
     .execute[OrientDynaElementIterable]()
+    .asScala
     .map(toElement)
     .toList
 
@@ -42,6 +43,7 @@ sealed trait SqlInterpreter[G[_]] extends (SqlDSL ~> G) {
     f(graph
       .command(new OCommandSQL(query))
       .execute[OrientDynaElementIterable]()
+      .asScala
       .head.asInstanceOf[OrientElement])
 
   private def executeInsertVertex[A](query: String, f: Reader[OrientElement, A]): Vertex[A] = {

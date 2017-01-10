@@ -6,16 +6,18 @@ import cats.data.Reader
 import com.tinkerpop.blueprints.impls.orient.OrientElement
 import oriented.free.dsl._
 import oriented.free.interpreters.{ReadInterpreter, ReadMapInterpreter}
+import oriented.maps._
 import oriented.syntax.OrientRead
+
+import scala.reflect.ClassTag
 
 /**
   * OrientFormat typeclass makes it able to transform from and to OrientElements from a specific model A.
   */
 trait OrientFormat[A] {
 
-  lazy val reader: Reader[OrientElement, A] = read.foldMapUnsafe(ReadInterpreter)
-
   lazy val readerMap: Reader[Map[String, Any], A] = read.foldMapUnsafe(ReadMapInterpreter)
+  lazy val reader: Reader[OrientElement, A] = read.foldMapUnsafe(ReadInterpreter)
 
   /**
     * Formats an OrientElement to the model of type A
@@ -36,6 +38,8 @@ trait OrientFormat[A] {
   private val element: Reads[ReadDSL] = Reads.reads[ReadDSL]
 
   def read[R](r: R): OrientRead[R] = element.read(r)
+
+  def readCustom[R](r: Map[String, Any] => R): OrientRead[R] = element.readCustom(r)
 
   def read[T](fieldName: String)(implicit orientFormat: OrientFormat[T]): OrientRead[T] = element.readEmbedded(fieldName, orientFormat)
 
@@ -94,4 +98,13 @@ trait OrientFormat[A] {
   // properties = nameTypes.map(_._1) zip values
   // format = nameTypes.map(case (n, t) -> element.getProperty[t](n)) ==> User
 
+}
+
+object OrientFormat {
+
+  implicit def derive[A](implicit CT: ClassTag[A], C: MapCodec[A, Map[String, Any]]) = new OrientFormat[A] {
+    def name: String = CT.runtimeClass.getSimpleName
+    def read: OrientRead[A] = readCustom(r => C.decode(r).getOrElse(sys.error("Unable to read row")))
+    def properties(model: A): Map[String, Any] = C.encode(model)
+  }
 }

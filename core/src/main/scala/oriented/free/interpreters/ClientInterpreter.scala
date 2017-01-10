@@ -1,13 +1,17 @@
 package oriented.free.interpreters
 
 import java.util
+
 import cats.data.EitherT
 import cats.{Id, ~>}
 import com.tinkerpop.blueprints.impls.orient.{OrientBaseGraph, OrientEdge, OrientVertex}
 import oriented._
 import oriented.free.dsl._
+
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
+import scala.collection.JavaConverters._
+import scala.util.control.NonFatal
 
 /**
   * A ClientInterpreter forms a natural transformation from ClientDSL to a higher kinded G.
@@ -24,10 +28,9 @@ trait ClientInterpreter[G[_]] extends (ClientDSL ~> G) {
 
   private def addVertex[A](vertexModel: A, orientFormat: OrientFormat[A]): Vertex[A] = {
     val vertex: OrientVertex = graph.addVertex(s"class:${orientFormat.name}", new util.ArrayList[Any]())
+    val serialized = orientFormat.properties(vertexModel).asJava
 
-    orientFormat.properties(vertexModel).foreach { case (key, value) =>
-      vertex.setProperty(key, value)
-    }
+    vertex.setProperties(serialized)
 
     Vertex(vertexModel, vertex)
   }
@@ -43,9 +46,7 @@ trait ClientInterpreter[G[_]] extends (ClientDSL ~> G) {
       inVertex.orientElement,
       null)
 
-    orientFormat.properties(edgeModel).foreach { case (key, value) =>
-      edge.setProperty(key, value)
-    }
+    edge.setProperties(orientFormat.properties(edgeModel).asJava)
 
     Edge(edgeModel, edge)
   }
